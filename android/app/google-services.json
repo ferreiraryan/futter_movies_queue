@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "857337256435",
+    "project_id": "movie-queue-c2e96",
+    "storage_bucket": "movie-queue-c2e96.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857337256435:android:31bd26914a9b0b28465a86",
+        "android_client_info": {
+          "package_name": "com.example.movie_queue"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiK9E-d_wPQqj9TTVuPY3_DybFvNHNrak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
