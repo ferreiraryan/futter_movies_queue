@@ -19,7 +19,6 @@ class MovieListScreen extends StatefulWidget {
 
 class _MovieListScreenState extends State<MovieListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  // NOVO: Variável de estado para gerenciar a lista localmente
   List<Movie> _movies = [];
 
   @override
@@ -50,7 +49,6 @@ class _MovieListScreenState extends State<MovieListScreen> {
           if (snapshot.hasData && snapshot.data!.exists) {
             final userData = snapshot.data!.data() as Map<String, dynamic>;
             final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
-            // ATUALIZA a lista local com os dados do Firebase
             _movies = movieDataList
                 .map((data) => Movie.fromMap(data as Map<String, dynamic>))
                 .toList();
@@ -71,18 +69,16 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 _firestoreService.moveUpcomingToWatched(featuredMovie);
               },
               onReorder: (oldIndex, newIndex) {
-                // LÓGICA CORRIGIDA
                 setState(() {
-                  // Ajusta o índice para a lista reordenável
                   if (newIndex > oldIndex) {
                     newIndex -= 1;
                   }
-                  // Remove o filme da lista principal usando o índice ajustado
+                  // A reordenação agora acontece na lista local (_movies)
+                  // que é a fonte da verdade para a UI neste momento.
                   final movie = _movies.removeAt(oldIndex + 1);
-                  // Insere na nova posição, também ajustada
                   _movies.insert(newIndex + 1, movie);
                 });
-                // Salva a nova ordem completa no Firestore
+                // Após a atualização visual, salva a nova ordem no Firestore.
                 _firestoreService.updateUpcomingOrder(_movies);
               },
             );

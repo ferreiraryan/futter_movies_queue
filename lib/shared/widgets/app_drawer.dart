@@ -7,7 +7,6 @@ class AppDrawer extends StatelessWidget {
 
   void _signOut(BuildContext context) async {
     await AuthService().signOut();
-    // O AuthGate cuidará de redirecionar para a tela de login.
   }
 
   @override
@@ -49,7 +48,7 @@ class AppDrawer extends StatelessWidget {
                     style: TextStyle(color: Colors.white, fontSize: 20),
                   ),
                   onTap: () {
-                    Navigator.pop(context); // Fecha o drawer
+                    Navigator.pop(context);
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -63,7 +62,6 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-          // Botão de Sair no final
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
             title: const Text(
@@ -78,4 +76,3 @@ class AppDrawer extends StatelessWidget {
     );
   }
 }
-
