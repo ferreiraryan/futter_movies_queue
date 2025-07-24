@@ -4,7 +4,8 @@ import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../models/movie_model.dart';
-import '../widgets/movie_list.dart'; // Importa o novo widget
+import '../widgets/movie_list.dart';
+import '../widgets/watched_movie_card.dart';
 import 'movie_search_screen.dart';
 
 enum ScreenType { upcoming, watched }
@@ -18,6 +19,8 @@ class MovieListScreen extends StatefulWidget {
 
 class _MovieListScreenState extends State<MovieListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  // NOVO: Variável de estado para gerenciar a lista localmente
+  List<Movie> _movies = [];
 
   @override
   Widget build(BuildContext context) {
@@ -37,27 +40,29 @@ class _MovieListScreenState extends State<MovieListScreen> {
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestoreService.getUserDocStream(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              _movies.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Adicione seu primeiro filme!'));
+          if (snapshot.hasError) {
+            return const Center(child: Text('Ocorreu um erro.'));
+          }
+          if (snapshot.hasData && snapshot.data!.exists) {
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
+            // ATUALIZA a lista local com os dados do Firebase
+            _movies = movieDataList
+                .map((data) => Movie.fromMap(data as Map<String, dynamic>))
+                .toList();
           }
 
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
-          final movies = movieDataList
-              .map((data) => Movie.fromMap(data as Map<String, dynamic>))
-              .toList();
-
-          if (movies.isEmpty) {
+          if (_movies.isEmpty) {
             return const Center(child: Text('Nenhum filme nesta lista.'));
           }
 
-          // Lógica para a tela de "Próximos Filmes" com reordenação
           if (isUpcoming) {
-            final featuredMovie = movies.first;
-            final reorderableMovies = movies.sublist(1);
+            final featuredMovie = _movies.first;
+            final reorderableMovies = _movies.sublist(1);
 
             return ReorderableMovieList(
               featuredMovie: featuredMovie,
@@ -66,42 +71,28 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 _firestoreService.moveUpcomingToWatched(featuredMovie);
               },
               onReorder: (oldIndex, newIndex) {
-                // *** LÓGICA CORRIGIDA ***
-                // Não usamos mais setState aqui. Apenas manipulamos a lista
-                // e enviamos para o Firestore. O StreamBuilder cuidará da UI.
-
-                // Cria uma cópia mutável da lista que pode ser reordenada
-                final List<Movie> mutableReorderableMovies = List.from(
-                  reorderableMovies,
-                );
-
-                // Ajusta o índice para a lista 'reorderableMovies'
-                if (newIndex > oldIndex) {
-                  newIndex -= 1;
-                }
-
-                // Remove o item da posição antiga e insere na nova
-                final movie = mutableReorderableMovies.removeAt(oldIndex);
-                mutableReorderableMovies.insert(newIndex, movie);
-
-                // Cria a lista completa e salva no Firestore
-                final fullNewList = [
-                  featuredMovie,
-                  ...mutableReorderableMovies,
-                ];
-                _firestoreService.updateUpcomingOrder(fullNewList);
+                // LÓGICA CORRIGIDA
+                setState(() {
+                  // Ajusta o índice para a lista reordenável
+                  if (newIndex > oldIndex) {
+                    newIndex -= 1;
+                  }
+                  // Remove o filme da lista principal usando o índice ajustado
+                  final movie = _movies.removeAt(oldIndex + 1);
+                  // Insere na nova posição, também ajustada
+                  _movies.insert(newIndex + 1, movie);
+                });
+                // Salva a nova ordem completa no Firestore
+                _firestoreService.updateUpcomingOrder(_movies);
               },
             );
           } else {
-            // Para a tela de "Assistidos", usamos a lista simples (sem reordenar)
-            // TODO: Criar um widget de lista simples para os assistidos.
-            // Por enquanto, mostra uma lista básica.
             return ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: movies.length,
+              itemCount: _movies.length,
               itemBuilder: (context, index) {
-                final movie = movies[index];
-                return ListTile(title: Text(movie.title));
+                final movie = _movies[index];
+                return WatchedMovieCard(movie: movie);
               },
             );
           }
@@ -125,3 +116,4 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 }
+

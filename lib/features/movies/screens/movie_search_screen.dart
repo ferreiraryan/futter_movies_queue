@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../app/services/tmdb_service.dart';
 import '../models/movie_model.dart';
 import '../../../shared/constants/app_colors.dart';
-import 'movie_details_screen.dart'; // Importa a nova tela
+import 'movie_details_screen.dart';
 
 class MovieSearchScreen extends StatefulWidget {
   const MovieSearchScreen({super.key});
@@ -95,15 +95,21 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
                               ? movie.releaseDate.substring(0, 4)
                               : 'N/A',
                         ),
-                        onTap: () {
-                          // *** LÓGICA ATUALIZADA PARA NAVEGAR ***
-                          Navigator.push(
+                        onTap: () async {
+                          // *** LÓGICA ATUALIZADA ***
+                          // Navega para os detalhes e aguarda um resultado
+                          final result = await Navigator.push<bool>(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
                                   MovieDetailsScreen(movie: movie),
                             ),
                           );
+                          // Se o resultado for 'true' (filme adicionado com sucesso),
+                          // fecha também a tela de busca.
+                          if (result == true && context.mounted) {
+                            Navigator.pop(context);
+                          }
                         },
                       );
                     },

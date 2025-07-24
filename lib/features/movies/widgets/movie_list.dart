@@ -35,7 +35,6 @@ class ReorderableMovieList extends StatelessWidget {
         // Cada item precisa de uma Key única para o Flutter saber quem é quem.
         return MovieListItem(key: ValueKey(movie.id), movie: movie);
       },
-      // A função que é chamada quando o usuário termina de arrastar um item.
       onReorder: onReorder,
     );
   }

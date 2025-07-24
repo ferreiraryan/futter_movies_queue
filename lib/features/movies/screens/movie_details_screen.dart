@@ -6,14 +6,73 @@ import '../models/movie_model.dart';
 
 class MovieDetailsScreen extends StatelessWidget {
   final Movie movie;
-  final bool showAddButton; // NOVO: Flag para controlar a visibilidade do botão
+  final bool showAddButton;
+  final bool showRemoveButton;
   final FirestoreService _firestoreService = FirestoreService();
 
   MovieDetailsScreen({
     super.key,
     required this.movie,
-    this.showAddButton = true, // Padrão é mostrar o botão
+    this.showAddButton = true,
+    this.showRemoveButton = false,
   });
+
+  Widget? _buildBottomButton(BuildContext context) {
+    if (showAddButton) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: CustomButton(
+          text: 'Adicionar à Fila',
+          onPressed: () async {
+            Navigator.pop(context, false);
+            final success = await _firestoreService.addMovieToUpcoming(movie);
+            if (!context.mounted) return;
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${movie.title} adicionado à lista!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              // Retorna 'true' para indicar sucesso
+              Navigator.pop(context, true);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Este filme já está na sua lista ou já foi assistido.',
+                  ),
+                  backgroundColor: Colors.orangeAccent,
+                ),
+              );
+              // Retorna 'false' para indicar falha
+            }
+          },
+        ),
+      );
+    }
+    if (showRemoveButton) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: CustomButton(
+          text: 'Remover dos Assistidos',
+          backgroundColor: Colors.redAccent,
+          onPressed: () async {
+            Navigator.pop(context, true);
+            await _firestoreService.removeMovieFromWatched(movie);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${movie.title} removido dos assistidos.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+        ),
+      );
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,42 +136,7 @@ class MovieDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
-      // Mostra o botão apenas se showAddButton for true
-      bottomNavigationBar: showAddButton
-          ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: CustomButton(
-                text: 'Adicionar à Fila',
-                onPressed: () async {
-                  final success = await _firestoreService.addMovieToUpcoming(
-                    movie,
-                  );
-                  if (!context.mounted) return;
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${movie.title} adicionado à lista!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                    Navigator.pop(context);
-                    Navigator.pop(context);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Este filme já está na sua lista ou já foi assistido.',
-                        ),
-                        backgroundColor: Colors.orangeAccent,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            )
-          : null,
+      bottomNavigationBar: _buildBottomButton(context),
     );
   }
 }
-
