@@ -61,4 +61,30 @@ class FirestoreService {
     if (_userId == null) return const Stream.empty();
     return _db.collection('users').doc(_userId).snapshots();
   }
+
+  Future<void> updateMovieRating(Movie movie, double newRating) async {
+    if (_userId == null) return;
+    final docRef = _db.collection('users').doc(_userId);
+
+    final docSnapshot = await docRef.get();
+
+    if (docSnapshot.exists) {
+      final data = await docRef.get();
+
+      final List<dynamic> watchedMovies = List.from(
+        data['watched_movies'] ?? [],
+      );
+
+      final int movieIndex = watchedMovies.indexWhere(
+        (m) => m['id'] == movie.id,
+      );
+
+      if (movieIndex != -1) {
+        watchedMovies[movieIndex]['rating'] = newRating;
+
+        await docRef.update({'watched_movies': watchedMovies});
+      }
+    }
+  }
 }
+

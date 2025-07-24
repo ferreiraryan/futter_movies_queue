@@ -3,19 +3,37 @@ import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../models/movie_model.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
-class MovieDetailsScreen extends StatelessWidget {
+class MovieDetailsScreen extends StatefulWidget {
   final Movie movie;
   final bool showAddButton;
   final bool showRemoveButton;
-  final FirestoreService _firestoreService = FirestoreService();
 
-  MovieDetailsScreen({
+  const MovieDetailsScreen({
     super.key,
     required this.movie,
     this.showAddButton = true,
     this.showRemoveButton = false,
   });
+
+  @override
+  _MovieDetailsScreenState createState() => _MovieDetailsScreenState();
+}
+
+class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+  late Movie movie;
+  late bool showAddButton;
+  late bool showRemoveButton;
+
+  @override
+  void initState() {
+    super.initState();
+    movie = widget.movie;
+    showAddButton = widget.showAddButton;
+    showRemoveButton = widget.showRemoveButton;
+  }
 
   Widget? _buildBottomButton(BuildContext context) {
     if (showAddButton) {
@@ -35,7 +53,7 @@ class MovieDetailsScreen extends StatelessWidget {
                 ),
               );
               // Retorna 'true' para indicar sucesso
-              Navigator.pop(context, true);
+              Navigator.pop(context);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -58,7 +76,7 @@ class MovieDetailsScreen extends StatelessWidget {
           text: 'Remover dos Assistidos',
           backgroundColor: Colors.redAccent,
           onPressed: () async {
-            Navigator.pop(context, true);
+            Navigator.pop(context);
             await _firestoreService.removeMovieFromWatched(movie);
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
@@ -97,6 +115,7 @@ class MovieDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -109,6 +128,7 @@ class MovieDetailsScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 8),
                   Text(
                     'Lançamento: ${movie.releaseDate}',
@@ -118,6 +138,20 @@ class MovieDetailsScreen extends StatelessWidget {
                       color: Colors.grey,
                     ),
                   ),
+                  if (widget.showRemoveButton)
+                    RatingBar.builder(
+                      initialRating: movie.rating != null ? movie.rating! : 3,
+                      minRating: 1,
+                      direction: Axis.horizontal,
+                      allowHalfRating: true,
+                      itemCount: 5,
+                      itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                      itemBuilder: (context, _) =>
+                          Icon(Icons.star, color: Colors.amber),
+                      onRatingUpdate: (rating) {
+                        _firestoreService.updateMovieRating(movie, rating);
+                      },
+                    ),
                   const SizedBox(height: 16),
                   const Text(
                     'Sinopse',

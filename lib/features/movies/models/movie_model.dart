@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/foundation.dart';
 
 class Movie {
@@ -6,6 +8,7 @@ class Movie {
   final String? posterPath;
   final String overview;
   final String releaseDate;
+  final double? rating;
 
   Movie({
     required this.id,
@@ -13,9 +16,9 @@ class Movie {
     this.posterPath,
     required this.overview,
     required this.releaseDate,
+    this.rating,
   });
 
-  // ... (fromJson, toMap, fromMap, fullPosterUrl permanecem os mesmos)
   factory Movie.fromJson(Map<String, dynamic> json) => Movie(
     id: json['id'],
     title: json['title'],
@@ -29,20 +32,24 @@ class Movie {
     'poster_path': posterPath,
     'overview': overview,
     'release_date': releaseDate,
+    'rating': rating,
   };
-  factory Movie.fromMap(Map<String, dynamic> map) => Movie(
-    id: map['id'],
-    title: map['title'],
-    posterPath: map['poster_path'],
-    overview: map['overview'],
-    releaseDate: map['release_date'],
-  );
+  factory Movie.fromMap(Map<String, dynamic> map) {
+    final num? ratingValue = map['rating'];
+
+    return Movie(
+      id: map['id'],
+      title: map['title'],
+      posterPath: map['poster_path'],
+      overview: map['overview'],
+      releaseDate: map['release_date'],
+      rating: ratingValue?.toDouble(),
+    );
+  }
   String get fullPosterUrl => (posterPath != null && posterPath!.isNotEmpty)
       ? 'https://image.tmdb.org/t/p/w500$posterPath'
       : 'https://placehold.co/500x750/4B3A71/FFFFFF?text=Sem+Imagem';
 
-  // NOVO: Sobrescrevendo `==` e `hashCode` para que o Flutter possa
-  // diferenciar objetos Movie pelo seu ID, o que é crucial para reordenação.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

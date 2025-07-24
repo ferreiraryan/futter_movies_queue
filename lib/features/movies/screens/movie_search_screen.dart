@@ -96,20 +96,15 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
                               : 'N/A',
                         ),
                         onTap: () async {
-                          // *** LÓGICA ATUALIZADA ***
-                          // Navega para os detalhes e aguarda um resultado
-                          final result = await Navigator.push<bool>(
+                          Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  MovieDetailsScreen(movie: movie),
+                              builder: (context) => MovieDetailsScreen(
+                                movie: movie,
+                                showAddButton: true,
+                              ),
                             ),
                           );
-                          // Se o resultado for 'true' (filme adicionado com sucesso),
-                          // fecha também a tela de busca.
-                          if (result == true && context.mounted) {
-                            Navigator.pop(context);
-                          }
                         },
                       );
                     },
@@ -120,4 +115,3 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
     );
   }
 }
-
