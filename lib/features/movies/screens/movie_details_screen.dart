@@ -18,10 +18,10 @@ class MovieDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _MovieDetailsScreenState createState() => _MovieDetailsScreenState();
+  MovieDetailsScreenState createState() => MovieDetailsScreenState();
 }
 
-class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
+class MovieDetailsScreenState extends State<MovieDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   late Movie movie;
   late bool showAddButton;
@@ -63,7 +63,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   backgroundColor: Colors.orangeAccent,
                 ),
               );
-              // Retorna 'false' para indicar falha
             }
           },
         ),
