@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app/services/firestore_service.dart';
 import '../../../app/services/tmdb_service.dart';
 import '../models/movie_model.dart';
 import '../../../shared/constants/app_colors.dart';
+import 'movie_details_screen.dart'; // Importa a nova tela
 
 class MovieSearchScreen extends StatefulWidget {
   const MovieSearchScreen({super.key});
@@ -12,7 +12,6 @@ class MovieSearchScreen extends StatefulWidget {
 
 class _MovieSearchScreenState extends State<MovieSearchScreen> {
   final TmdbService _tmdbService = TmdbService();
-  final FirestoreService _firestoreService = FirestoreService();
   List<Movie> _searchResults = [];
   bool _isLoading = false;
   String _message = 'Digite o nome de um filme para buscar.';
@@ -96,33 +95,15 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
                               ? movie.releaseDate.substring(0, 4)
                               : 'N/A',
                         ),
-                        onTap: () async {
-                          // *** LÓGICA DE VERIFICAÇÃO ATUALIZADA ***
-                          final success = await _firestoreService
-                              .addMovieToUpcoming(movie);
-
-                          if (!mounted) return; // Boa prática para evitar erros
-
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${movie.title} adicionado à lista!',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Este filme já está na sua lista ou já foi assistido.',
-                                ),
-                                backgroundColor: Colors.orangeAccent,
-                              ),
-                            );
-                          }
-                          Navigator.pop(context);
+                        onTap: () {
+                          // *** LÓGICA ATUALIZADA PARA NAVEGAR ***
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MovieDetailsScreen(movie: movie),
+                            ),
+                          );
                         },
                       );
                     },
@@ -133,3 +114,4 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
     );
   }
 }
+
