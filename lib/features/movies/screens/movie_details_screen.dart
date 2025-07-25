@@ -56,7 +56,6 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   backgroundColor: Colors.green,
                 ),
               );
-              // Retorna 'true' para indicar sucesso
               Navigator.pop(context);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -121,7 +120,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(movie.title),
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.formBackground,
       ),
       body: SingleChildScrollView(
         child: Column(

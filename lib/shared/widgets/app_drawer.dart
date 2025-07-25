@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movie_queue/shared/constants/app_colors.dart';
 import '../../app/services/auth_service.dart';
 import '../../features/movies/screens/movie_list_screen.dart';
 
@@ -11,8 +12,10 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const textColor = AppColors.textPrimary;
+
     return Drawer(
-      backgroundColor: const Color(0xFF3A86FF),
+      backgroundColor: AppColors.formBackground,
       child: Column(
         children: <Widget>[
           Expanded(
@@ -23,11 +26,11 @@ class AppDrawer extends StatelessWidget {
                 ListTile(
                   leading: const Icon(
                     Icons.movie_filter_outlined,
-                    color: Colors.white,
+                    color: textColor,
                   ),
                   title: const Text(
                     'Próximos',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                    style: TextStyle(color: textColor, fontSize: 20),
                   ),
                   onTap: () {
                     Navigator.pop(context); // Fecha o drawer
@@ -42,10 +45,10 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.history, color: Colors.white),
+                  leading: const Icon(Icons.history, color: textColor),
                   title: const Text(
                     'Últimos',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                    style: TextStyle(color: textColor, fontSize: 20),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -63,10 +66,10 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white),
+            leading: const Icon(Icons.logout, color: textColor),
             title: const Text(
               'Sair',
-              style: TextStyle(color: Colors.white, fontSize: 20),
+              style: TextStyle(color: textColor, fontSize: 20),
             ),
             onTap: () => _signOut(context),
           ),

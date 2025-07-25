@@ -4,26 +4,21 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Cores baseadas na sua nova paleta de design
+  // Um tom de bege pêssego, claro e quente.
+  static const Color background = Color(0xFFE6B8A0);
 
-  // Cor primária (Roxo escuro) - Usada para o fundo principal e botões
-  static const Color background = Color(0xFF564787);
+  // Um tom de lilás bem claro, quase branco.
+  static const Color formBackground = Color(0xFFDCD6F7);
 
-  // Cor de fundo secundária (Bege) - Usada para o formulário de login
-  static const Color formBackground = Color(0xFFD4AA7D);
+  // Um tom de roxo escuro e sóbrio.
+  static const Color primaryColor = Color(0xFF564787);
 
-  // Cor do botão principal (é a mesma da primária para manter a consistência)
-  static const Color buttonBackground = Color(0xFF564787);
-
-  // Cor de destaque (Azul) - Pode ser usada para links ou ícones
+  // Um tom de azul vibrante e claro.
   static const Color secondaryAccent = Color(0xFF20A4F3);
 
-  // Cor de destaque clara (Lilás) - Pode ser usada para fundos sutis
-  static const Color lightAccent = Color(0xFFDCD6F7);
 
-  // Cor do texto principal (Quase preto)
+  // Preto, para textos principais.
   static const Color textPrimary = Color(0xFF020202);
-
   // Cor do texto do botão (Branco)
   static const Color buttonText = Colors.white;
 }

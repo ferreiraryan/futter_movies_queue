@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movie_queue/features/movies/widgets/upcoming_list_card.dart';
 import '../models/movie_model.dart';
 import 'movie_card.dart';
 
@@ -21,11 +22,7 @@ class ReorderableMovieList extends StatelessWidget {
       itemCount: reorderableMovies.length,
       itemBuilder: (context, index) {
         final movie = reorderableMovies[index];
-        return MovieCard(
-          key: ValueKey(movie.id),
-          movie: movie,
-          isWatched: false,
-        );
+        return UpcomingListCard(key: ValueKey(movie.id), movie: movie);
       },
       onReorder: onReorder,
     );

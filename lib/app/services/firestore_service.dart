@@ -34,17 +34,32 @@ class FirestoreService {
   Future<void> moveUpcomingToWatched(Movie movie) async {
     if (_userId == null) return;
     final docRef = _db.collection('users').doc(_userId);
+    final now = DateTime.now();
+    final dateOnly = DateTime(now.year, now.month, now.day);
+    final watchedMovieMap = {
+      ...movie.toMap(),
+      'watched_date': Timestamp.fromDate(dateOnly),
+    };
+
     await docRef.update({
       'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
-      'watched_movies': FieldValue.arrayUnion([movie.toMap()]),
+
+      'watched_movies': FieldValue.arrayUnion([watchedMovieMap]),
     });
   }
 
   Future<void> removeMovieFromWatched(Movie movie) async {
     if (_userId == null) return;
     final docRef = _db.collection('users').doc(_userId);
+
+    final Map<String, dynamic> movieMap = movie.toMap();
+
+    if (movie.watchedDate != null) {
+      movieMap['watched_date'] = Timestamp.fromDate(movie.watchedDate!);
+    }
+
     await docRef.update({
-      'watched_movies': FieldValue.arrayRemove([movie.toMap()]),
+      'watched_movies': FieldValue.arrayRemove([movieMap]),
     });
   }
 

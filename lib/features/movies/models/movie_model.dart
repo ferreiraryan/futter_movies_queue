@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Movie {
   final int id;
   final String title;
@@ -5,6 +7,7 @@ class Movie {
   final String overview;
   final String releaseDate;
   final double? rating;
+  final DateTime? watchedDate;
 
   Movie({
     required this.id,
@@ -13,6 +16,7 @@ class Movie {
     required this.overview,
     required this.releaseDate,
     this.rating,
+    this.watchedDate,
   });
 
   factory Movie.fromJson(Map<String, dynamic> json) => Movie(
@@ -22,14 +26,7 @@ class Movie {
     overview: json['overview'] ?? 'Sinopse não disponível.',
     releaseDate: json['release_date'] ?? 'Data não informada.',
   );
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'title': title,
-    'poster_path': posterPath,
-    'overview': overview,
-    'release_date': releaseDate,
-    'rating': rating,
-  };
+
   factory Movie.fromMap(Map<String, dynamic> map) {
     final num? ratingValue = map['rating'];
 
@@ -40,8 +37,21 @@ class Movie {
       overview: map['overview'],
       releaseDate: map['release_date'],
       rating: ratingValue?.toDouble(),
+      watchedDate: map['watched_date'] != null
+          ? (map['watched_date'] as Timestamp).toDate()
+          : null,
     );
   }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'poster_path': posterPath,
+    'overview': overview,
+    'release_date': releaseDate,
+    'rating': rating,
+  };
+
   String get fullPosterUrl => (posterPath != null && posterPath!.isNotEmpty)
       ? 'https://image.tmdb.org/t/p/w500$posterPath'
       : 'https://placehold.co/500x750/4B3A71/FFFFFF?text=Sem+Imagem';

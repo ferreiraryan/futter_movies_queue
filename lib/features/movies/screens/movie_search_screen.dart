@@ -2,12 +2,12 @@ import 'dart:async'; // Import necessário para usar o Timer
 
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/widgets/movie_card.dart';
+import 'package:movie_queue/features/movies/widgets/search_list_card.dart';
 import 'package:movie_queue/shared/widgets/main_background.dart';
 
 import '../../../app/services/tmdb_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../models/movie_model.dart';
-import 'movie_details_screen.dart';
 
 class MovieSearchScreen extends StatefulWidget {
   const MovieSearchScreen({super.key});
@@ -30,7 +30,6 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
         title: const Text('Buscar Filme'),
         backgroundColor: AppColors.formBackground,
       ),
-      // O campo de busca fica no header para se manter fixo no topo
       header: Padding(
         padding: const EdgeInsets.all(16.0),
         child: TextField(
@@ -50,17 +49,15 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
           ),
         ),
       ),
-      // O corpo contém a lista de resultados ou a mensagem
       body: _searchResults.isEmpty
           ? Center(child: Text(_message))
           : ListView.builder(
-              // Propriedades essenciais para listas dentro de áreas de rolagem
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _searchResults.length,
               itemBuilder: (context, index) {
                 final movie = _searchResults[index];
-                return MovieCard(movie: movie, isWatched: false);
+                return SearchListCard(movie: movie);
               },
             ),
     );

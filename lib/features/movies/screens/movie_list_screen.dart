@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/movie_card.dart';
+import 'package:movie_queue/features/movies/widgets/watched_list_card.dart';
 import 'package:movie_queue/shared/widgets/main_background.dart';
 import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
@@ -30,7 +31,6 @@ class _MovieListScreenState extends State<MovieListScreen> {
     final String title = isUpcoming ? 'Próximos Filmes' : 'Últimos Filmes';
     final String listKey = isUpcoming ? 'upcoming_movies' : 'watched_movies';
 
-    // <<< CORREÇÃO ESTRUTURAL: StreamBuilder envolve toda a UI
     return StreamBuilder<DocumentSnapshot>(
       stream: _firestoreService.getUserDocStream(),
       builder: (context, snapshot) {
@@ -101,32 +101,30 @@ class _MovieListScreenState extends State<MovieListScreen> {
       itemCount: _movies.length,
       itemBuilder: (context, index) {
         final movie = _movies[index];
-        return MovieCard(
-          key: ValueKey(movie.id),
-          movie: movie,
-          isWatched: true,
-        );
+        return WatchedListCard(key: ValueKey(movie.id), movie: movie);
       },
     );
   }
 
-  // (Restante dos seus métodos _buildAppBar, _buildFloatingActionButton, etc.)
   AppBar _buildAppBar(String title) {
     return AppBar(
       title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
       backgroundColor: AppColors.formBackground,
       centerTitle: true,
       elevation: 0,
-      iconTheme: const IconThemeData(color: AppColors.background),
+      iconTheme: const IconThemeData(color: AppColors.primaryColor),
     );
   }
 
   Widget _buildFloatingActionButton() {
     return FloatingActionButton.extended(
       onPressed: _navigateToAddMovie,
-      label: const Text('Adicionar Filme'),
-      icon: const Icon(Icons.add),
-      backgroundColor: AppColors.lightAccent,
+      label: const Text(
+        'Adicionar Filme',
+        style: TextStyle(color: AppColors.buttonText),
+      ),
+      icon: const Icon(Icons.add, color: AppColors.buttonText),
+      backgroundColor: AppColors.primaryColor,
     );
   }
 
@@ -154,6 +152,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildEmptyScaffold(String title, bool isUpcoming) {
     return MainBackground(
       appBar: _buildAppBar(title),
+
       floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
       body: const Center(child: Text('Nenhum filme nesta lista.')),
       drawer: AppDrawer(),

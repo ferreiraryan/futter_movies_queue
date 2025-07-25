@@ -67,11 +67,11 @@ class FeaturedMovieCard extends StatelessWidget {
                       onPressed: onMarkedAsWatched,
                       icon: const Icon(
                         Icons.check_circle_outline,
-                        color: AppColors.buttonBackground,
+                        color: AppColors.primaryColor,
                       ),
                       label: const Text(
                         'Marcar como assistido',
-                        style: TextStyle(color: AppColors.buttonBackground),
+                        style: TextStyle(color: AppColors.primaryColor),
                       ),
                     ),
                   ],

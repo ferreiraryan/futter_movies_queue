@@ -36,8 +36,9 @@ class MainBackground extends StatelessWidget {
       }
     }
     final double topPadding = isSearchScreen
-        ? 230.0 // Padding menor para a tela de busca
-        : (header != null ? 460.0 : 200.0); // Sua lógica original
+        ? 230.0
+        : (header != null ? 460.0 : 200.0);
+
     return Scaffold(
       backgroundColor: purpleColor,
       appBar: appBar,

@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
-import '../../../shared/constants/app_colors.dart';
 import '../models/movie_model.dart';
 
+// Widget base, puramente visual e reutilizável
 class MovieCard extends StatelessWidget {
   final Movie movie;
-  final bool isWatched;
-  const MovieCard({super.key, required this.movie, required this.isWatched});
+  final Widget? subtitle; // Subtítulo opcional
+  final VoidCallback onTap; // Ação ao tocar
+
+  const MovieCard({
+    super.key,
+    required this.movie,
+    required this.onTap,
+    this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,19 +23,7 @@ class MovieCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MovieDetailsScreen(
-                movie: movie,
-                showAddButton: false,
-                showRemoveButton: true,
-                watched: isWatched,
-              ),
-            ),
-          );
-        },
+        onTap: onTap,
         child: Row(
           children: [
             Image.network(
@@ -56,11 +51,10 @@ class MovieCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Assistido em: (data futura)',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    subtitle!,
+                  ],
                 ],
               ),
             ),
