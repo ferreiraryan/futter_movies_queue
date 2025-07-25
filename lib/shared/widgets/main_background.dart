@@ -39,11 +39,13 @@ class MainBackground extends StatelessWidget {
               children: [
                 ClipPath(
                   clipper: WaveClipper(),
-                  child: Container(height: 440, color: waveColor),
+                  child: Container(height: 220, color: waveColor),
                 ),
 
-                if (header != null)
+                if (header != null) ...[
                   Positioned(left: 20, right: 20, child: header!),
+                  const Padding(padding: EdgeInsets.only(bottom: 460)),
+                ],
               ],
             ),
 
