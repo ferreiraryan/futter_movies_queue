@@ -48,6 +48,14 @@ class FirestoreService {
     });
   }
 
+  Future<void> removeMovieFromUpcoming(Movie movie) async {
+    if (_userId == null) return;
+    final docRef = _db.collection('users').doc(_userId);
+    await docRef.update({
+      'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
+    });
+  }
+
   Future<void> updateUpcomingOrder(List<Movie> movies) async {
     if (_userId == null) return;
     final docRef = _db.collection('users').doc(_userId);
@@ -87,4 +95,3 @@ class FirestoreService {
     }
   }
 }
-

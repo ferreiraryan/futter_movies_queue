@@ -31,6 +31,7 @@ class FeaturedMovieCard extends StatelessWidget {
                   movie: movie,
                   showAddButton: false,
                   showRemoveButton: false,
+                  watched: false,
                 ),
               ),
             );

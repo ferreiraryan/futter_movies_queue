@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
+import 'package:movie_queue/features/movies/widgets/movie_card.dart';
 import 'package:movie_queue/shared/widgets/main_background.dart';
 import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../models/movie_model.dart';
 import '../widgets/movie_list.dart';
-import '../widgets/watched_movie_card.dart';
 import 'movie_search_screen.dart';
 
 enum ScreenType { upcoming, watched }
@@ -101,9 +101,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
       itemCount: _movies.length,
       itemBuilder: (context, index) {
         final movie = _movies[index];
-        // <<< OTIMIZAÇÃO PRINCIPAL: Adicionar uma Key!
-        // A Key ajuda o Flutter a identificar o widget e apenas movê-lo.
-        return WatchedMovieCard(key: ValueKey(movie.id), movie: movie);
+        return MovieCard(
+          key: ValueKey(movie.id),
+          movie: movie,
+          isWatched: true,
+        );
       },
     );
   }

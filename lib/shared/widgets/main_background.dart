@@ -25,6 +25,19 @@ class MainBackground extends StatelessWidget {
     final purpleColor = AppColors.background;
     final waveColor = AppColors.formBackground;
 
+    bool isSearchScreen = false;
+    if (appBar is AppBar) {
+      final appBarWidget = appBar as AppBar;
+      if (appBarWidget.title is Text) {
+        final titleWidget = appBarWidget.title as Text;
+        if (titleWidget.data == 'Buscar Filme') {
+          isSearchScreen = true;
+        }
+      }
+    }
+    final double topPadding = isSearchScreen
+        ? 230.0 // Padding menor para a tela de busca
+        : (header != null ? 460.0 : 200.0); // Sua lógica original
     return Scaffold(
       backgroundColor: purpleColor,
       appBar: appBar,
@@ -33,7 +46,7 @@ class MainBackground extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.only(top: header != null ? 460 : 200),
+              padding: EdgeInsets.only(top: topPadding),
               child: body,
             ),
 

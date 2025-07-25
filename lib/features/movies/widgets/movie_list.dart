@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/movie_model.dart';
-import 'movie_list_item.dart';
+import 'movie_card.dart';
 
 class ReorderableMovieList extends StatelessWidget {
   final List<Movie> reorderableMovies;
@@ -21,8 +21,11 @@ class ReorderableMovieList extends StatelessWidget {
       itemCount: reorderableMovies.length,
       itemBuilder: (context, index) {
         final movie = reorderableMovies[index];
-        // Cada item precisa de uma Key única para o Flutter saber quem é quem.
-        return MovieListItem(key: ValueKey(movie.id), movie: movie);
+        return MovieCard(
+          key: ValueKey(movie.id),
+          movie: movie,
+          isWatched: false,
+        );
       },
       onReorder: onReorder,
     );

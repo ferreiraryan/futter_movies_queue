@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
+import '../../../shared/constants/app_colors.dart';
 import '../models/movie_model.dart';
-import '../screens/movie_details_screen.dart';
 
-class WatchedMovieCard extends StatelessWidget {
+class MovieCard extends StatelessWidget {
   final Movie movie;
-
-  const WatchedMovieCard({super.key, required this.movie});
+  final bool isWatched;
+  const MovieCard({super.key, required this.movie, required this.isWatched});
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +22,9 @@ class WatchedMovieCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => MovieDetailsScreen(
                 movie: movie,
-                showAddButton: false, // Não mostra o botão de adicionar
-                showRemoveButton: true, // Mostra o botão de remover
+                showAddButton: false,
+                showRemoveButton: true,
+                watched: isWatched,
               ),
             ),
           );

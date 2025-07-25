@@ -9,12 +9,14 @@ class MovieDetailsScreen extends StatefulWidget {
   final Movie movie;
   final bool showAddButton;
   final bool showRemoveButton;
+  final bool watched;
 
   const MovieDetailsScreen({
     super.key,
     required this.movie,
     this.showAddButton = true,
     this.showRemoveButton = false,
+    required this.watched,
   });
 
   @override
@@ -26,6 +28,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
   late Movie movie;
   late bool showAddButton;
   late bool showRemoveButton;
+  late bool watched;
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
     movie = widget.movie;
     showAddButton = widget.showAddButton;
     showRemoveButton = widget.showRemoveButton;
+    watched = widget.watched;
   }
 
   Widget? _buildBottomButton(BuildContext context) {
@@ -69,24 +73,45 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
       );
     }
     if (showRemoveButton) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: CustomButton(
-          text: 'Remover dos Assistidos',
-          backgroundColor: Colors.redAccent,
-          onPressed: () async {
-            Navigator.pop(context);
-            await _firestoreService.removeMovieFromWatched(movie);
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${movie.title} removido dos assistidos.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-        ),
-      );
+      if (watched) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: CustomButton(
+            text: 'Remover dos Assistidos',
+            backgroundColor: Colors.redAccent,
+            onPressed: () async {
+              Navigator.pop(context);
+              await _firestoreService.removeMovieFromWatched(movie);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${movie.title} removido dos assistidos.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+          ),
+        );
+      } else {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: CustomButton(
+            text: 'Remover dos Proximos',
+            backgroundColor: Colors.redAccent,
+            onPressed: () async {
+              Navigator.pop(context);
+              await _firestoreService.removeMovieFromUpcoming(movie);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${movie.title} removido dos assistidos.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+          ),
+        );
+      }
     }
     return null;
   }
@@ -137,7 +162,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       color: Colors.grey,
                     ),
                   ),
-                  if (widget.showRemoveButton)
+                  if (watched)
                     RatingBar.builder(
                       initialRating: movie.rating != null ? movie.rating! : 3,
                       minRating: 1,
