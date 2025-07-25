@@ -4,14 +4,12 @@ import 'featured_movie_card.dart';
 import 'movie_list_item.dart';
 
 class ReorderableMovieList extends StatelessWidget {
-  final Movie featuredMovie;
   final List<Movie> reorderableMovies;
   final Function(int, int) onReorder;
   final VoidCallback onMarkedAsWatched;
 
   const ReorderableMovieList({
     super.key,
-    required this.featuredMovie,
     required this.reorderableMovies,
     required this.onReorder,
     required this.onMarkedAsWatched,
@@ -20,15 +18,9 @@ class ReorderableMovieList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
-      padding: const EdgeInsets.all(16),
-      // O header é o nosso card de destaque, que não pode ser arrastado.
-      header: Padding(
-        padding: const EdgeInsets.only(bottom: 16.0),
-        child: FeaturedMovieCard(
-          movie: featuredMovie,
-          onMarkedAsWatched: onMarkedAsWatched,
-        ),
-      ),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(left: 16, right: 16),
       itemCount: reorderableMovies.length,
       itemBuilder: (context, index) {
         final movie = reorderableMovies[index];
@@ -39,4 +31,3 @@ class ReorderableMovieList extends StatelessWidget {
     );
   }
 }
-
