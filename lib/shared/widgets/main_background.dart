@@ -1,6 +1,6 @@
 // main_background.dart
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart'; // Garanta que o import está correto
+import '../constants/app_colors.dart';
 
 class MainBackground extends StatelessWidget {
   final Widget? header;
@@ -39,7 +39,7 @@ class MainBackground extends StatelessWidget {
               children: [
                 ClipPath(
                   clipper: WaveClipper(),
-                  child: Container(height: 220, color: waveColor),
+                  child: Container(height: 440, color: waveColor),
                 ),
 
                 if (header != null)
@@ -47,9 +47,7 @@ class MainBackground extends StatelessWidget {
               ],
             ),
 
-            header != null
-                ? Padding(padding: const EdgeInsets.only(top: 250), child: body)
-                : body,
+            body,
           ],
         ),
       ),

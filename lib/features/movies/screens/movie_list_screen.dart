@@ -30,6 +30,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     final String title = isUpcoming ? 'Próximos Filmes' : 'Últimos Filmes';
     final String listKey = isUpcoming ? 'upcoming_movies' : 'watched_movies';
 
+    // <<< CORREÇÃO ESTRUTURAL: StreamBuilder envolve toda a UI
     return StreamBuilder<DocumentSnapshot>(
       stream: _firestoreService.getUserDocStream(),
       builder: (context, snapshot) {
@@ -50,23 +51,15 @@ class _MovieListScreenState extends State<MovieListScreen> {
         }
 
         if (_movies.isEmpty) {
-          return MainBackground(
-            appBar: _buildAppBar(title),
-            drawer: const AppDrawer(),
-            floatingActionButton: isUpcoming
-                ? _buildFloatingActionButton()
-                : null,
-            body: const Center(child: Text('Nenhum filme nesta lista.')),
-          );
+          return _buildEmptyScaffold(title, isUpcoming);
         }
 
         return MainBackground(
           appBar: _buildAppBar(title),
-          drawer: const AppDrawer(),
+          drawer: AppDrawer(),
           floatingActionButton: isUpcoming
               ? _buildFloatingActionButton()
               : null,
-
           header: isUpcoming
               ? FeaturedMovieCard(
                   movie: _movies.first,
@@ -75,25 +68,26 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   },
                 )
               : null,
-
           body: isUpcoming ? _buildUpcomingBody() : _buildWatchedBody(),
         );
       },
     );
   }
 
+  // --- MÉTODOS AUXILIARES ---
+
   Widget _buildUpcomingBody() {
+    final reorderableMovies = _movies.sublist(1);
     return ReorderableMovieList(
-      reorderableMovies: _movies.sublist(1),
-      onMarkedAsWatched: () {
-        _firestoreService.moveUpcomingToWatched(_movies.first);
-      },
+      key: ValueKey('reorderable_list'),
+      reorderableMovies: reorderableMovies,
       onReorder: (oldIndex, newIndex) {
         setState(() {
           if (newIndex > oldIndex) newIndex -= 1;
           final movie = _movies.removeAt(oldIndex + 1);
           _movies.insert(newIndex + 1, movie);
         });
+
         _firestoreService.updateUpcomingOrder(_movies);
       },
     );
@@ -106,15 +100,20 @@ class _MovieListScreenState extends State<MovieListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: _movies.length,
       itemBuilder: (context, index) {
-        return WatchedMovieCard(movie: _movies[index]);
+        final movie = _movies[index];
+        // <<< OTIMIZAÇÃO PRINCIPAL: Adicionar uma Key!
+        // A Key ajuda o Flutter a identificar o widget e apenas movê-lo.
+        return WatchedMovieCard(key: ValueKey(movie.id), movie: movie);
       },
     );
   }
 
+  // (Restante dos seus métodos _buildAppBar, _buildFloatingActionButton, etc.)
   AppBar _buildAppBar(String title) {
     return AppBar(
       title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
       backgroundColor: AppColors.formBackground,
+      centerTitle: true,
       elevation: 0,
       iconTheme: const IconThemeData(color: AppColors.background),
     );
@@ -150,4 +149,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
+  Widget _buildEmptyScaffold(String title, bool isUpcoming) {
+    return MainBackground(
+      appBar: _buildAppBar(title),
+      floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
+      body: const Center(child: Text('Nenhum filme nesta lista.')),
+      drawer: AppDrawer(),
+    );
+  }
 }

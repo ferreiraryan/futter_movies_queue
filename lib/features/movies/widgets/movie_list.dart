@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/movie_model.dart';
-import 'featured_movie_card.dart';
 import 'movie_list_item.dart';
 
 class ReorderableMovieList extends StatelessWidget {
   final List<Movie> reorderableMovies;
   final Function(int, int) onReorder;
-  final VoidCallback onMarkedAsWatched;
 
   const ReorderableMovieList({
     super.key,
     required this.reorderableMovies,
     required this.onReorder,
-    required this.onMarkedAsWatched,
   });
 
   @override

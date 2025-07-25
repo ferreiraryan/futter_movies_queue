@@ -4,8 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart'; // Arquivo gerado pelo FlutterFire
 import 'features/auth/screens/login_screen.dart';
 import 'features/movies/screens/movie_list_screen.dart';
+import 'package:flutter/rendering.dart';
 
 void main() async {
+  debugPaintSizeEnabled = false;
   // Garante que os bindings do Flutter foram inicializados
   WidgetsFlutterBinding.ensureInitialized();
   // Inicializa o Firebase
@@ -48,4 +50,3 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
-
