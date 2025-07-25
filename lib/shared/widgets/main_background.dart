@@ -30,26 +30,19 @@ class MainBackground extends StatelessWidget {
       appBar: appBar,
       drawer: drawer,
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            Stack(
-              alignment: Alignment.topCenter,
-              clipBehavior: Clip.none,
-              children: [
-                ClipPath(
-                  clipper: WaveClipper(),
-                  child: Container(height: 220, color: waveColor),
-                ),
-
-                if (header != null) ...[
-                  Positioned(left: 20, right: 20, child: header!),
-                  const Padding(padding: EdgeInsets.only(bottom: 460)),
-                ],
-              ],
+            Padding(
+              padding: EdgeInsets.only(top: header != null ? 460 : 200),
+              child: body,
             ),
 
-            body,
+            ClipPath(
+              clipper: WaveClipper(),
+              child: Container(height: 220, color: waveColor),
+            ),
+
+            if (header != null) Positioned(left: 20, right: 20, child: header!),
           ],
         ),
       ),
