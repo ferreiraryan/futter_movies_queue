@@ -1,14 +1,14 @@
+import 'dart:async'; // <<< MUDANÇA: Import necessário para o StreamSubscription
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
-import 'package:movie_queue/features/movies/widgets/movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/watched_list_card.dart';
 import 'package:movie_queue/shared/widgets/main_background.dart';
 import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../models/movie_model.dart';
-import '../widgets/movie_list.dart';
+import '../widgets/movie_list.dart'; // Corrigi o import que faltava
 import 'movie_search_screen.dart';
 
 enum ScreenType { upcoming, watched }
@@ -23,54 +23,82 @@ class MovieListScreen extends StatefulWidget {
 class _MovieListScreenState extends State<MovieListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
+  late final StreamSubscription<DocumentSnapshot> _movieSubscription;
   List<Movie> _movies = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToMovieChanges();
+  }
+
+  void _listenToMovieChanges() {
+    final String listKey = widget.screenType == ScreenType.upcoming
+        ? 'upcoming_movies'
+        : 'watched_movies';
+
+    _movieSubscription = _firestoreService.getUserDocStream().listen(
+      (snapshot) {
+        if (!mounted) return;
+
+        List<Movie> newMovies = [];
+        if (snapshot.exists && snapshot.data() != null) {
+          final userData = snapshot.data() as Map<String, dynamic>;
+          final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
+          newMovies = movieDataList
+              .map((data) => Movie.fromMap(data as Map<String, dynamic>))
+              .toList();
+        }
+
+        setState(() {
+          _movies = newMovies;
+          _isLoading = false;
+        });
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          // Você pode adicionar uma variável de estado de erro aqui se quiser
+        });
+        // TODO: Lidar com o erro, talvez mostrando um SnackBar
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _movieSubscription.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final bool isUpcoming = widget.screenType == ScreenType.upcoming;
     final String title = isUpcoming ? 'Próximos Filmes' : 'Últimos Filmes';
-    final String listKey = isUpcoming ? 'upcoming_movies' : 'watched_movies';
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: _firestoreService.getUserDocStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            _movies.isEmpty) {
-          return _buildLoadingScaffold(title);
-        }
-        if (snapshot.hasError) {
-          return _buildErrorScaffold();
-        }
+    if (_isLoading) {
+      return _buildLoadingScaffold(title);
+    }
 
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
-          _movies = movieDataList
-              .map((data) => Movie.fromMap(data as Map<String, dynamic>))
-              .toList();
-        }
+    if (_movies.isEmpty) {
+      return _buildEmptyScaffold(title, isUpcoming);
+    }
 
-        if (_movies.isEmpty) {
-          return _buildEmptyScaffold(title, isUpcoming);
-        }
-
-        return MainBackground(
-          appBar: _buildAppBar(title),
-          drawer: AppDrawer(),
-          floatingActionButton: isUpcoming
-              ? _buildFloatingActionButton()
-              : null,
-          header: isUpcoming
-              ? FeaturedMovieCard(
-                  movie: _movies.first,
-                  onMarkedAsWatched: () {
-                    _firestoreService.moveUpcomingToWatched(_movies.first);
-                  },
-                )
-              : null,
-          body: isUpcoming ? _buildUpcomingBody() : _buildWatchedBody(),
-        );
-      },
+    return MainBackground(
+      appBar: _buildAppBar(title),
+      drawer: const AppDrawer(),
+      floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
+      header: isUpcoming
+          ? FeaturedMovieCard(
+              movie: _movies.first,
+              onMarkedAsWatched: () {
+                _firestoreService.moveUpcomingToWatched(_movies.first);
+              },
+            )
+          : null,
+      body: isUpcoming ? _buildUpcomingBody() : _buildWatchedBody(),
     );
   }
 
@@ -79,7 +107,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildUpcomingBody() {
     final reorderableMovies = _movies.sublist(1);
     return ReorderableMovieList(
-      key: ValueKey('reorderable_list'),
+      key: const ValueKey('reorderable_list'),
       reorderableMovies: reorderableMovies,
       onReorder: (oldIndex, newIndex) {
         setState(() {
@@ -87,7 +115,6 @@ class _MovieListScreenState extends State<MovieListScreen> {
           final movie = _movies.removeAt(oldIndex + 1);
           _movies.insert(newIndex + 1, movie);
         });
-
         _firestoreService.updateUpcomingOrder(_movies);
       },
     );
@@ -138,6 +165,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildLoadingScaffold(String title) {
     return Scaffold(
       appBar: _buildAppBar(title),
+      drawer: const AppDrawer(),
       body: const Center(child: CircularProgressIndicator()),
     );
   }
@@ -145,6 +173,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildErrorScaffold() {
     return Scaffold(
       appBar: AppBar(title: const Text("Erro")),
+      drawer: const AppDrawer(),
       body: const Center(child: Text('Ocorreu um erro ao carregar os dados.')),
     );
   }
@@ -152,10 +181,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildEmptyScaffold(String title, bool isUpcoming) {
     return MainBackground(
       appBar: _buildAppBar(title),
-
       floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
       body: const Center(child: Text('Nenhum filme nesta lista.')),
-      drawer: AppDrawer(),
+      drawer: const AppDrawer(),
     );
   }
 }
