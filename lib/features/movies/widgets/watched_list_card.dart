@@ -6,16 +6,21 @@ import '../screens/movie_details_screen.dart';
 
 class WatchedListCard extends StatelessWidget {
   final Movie movie;
+  final String queueId;
 
-  const WatchedListCard({super.key, required this.movie});
+  const WatchedListCard({
+    super.key,
+    required this.movie,
+    required this.queueId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MovieCard(
       movie: movie,
       subtitle: Text(
-        movie.watchedDate != null
-            ? 'Assistido em: ${DateFormat('dd/MM/yyyy').format(movie.watchedDate!)}'
+        movie.watchedAt != null
+            ? 'Assistido em: ${DateFormat('dd/MM/yyyy').format(movie.watchedAt!)}'
             : 'Data de visualização não informada',
         style: const TextStyle(fontSize: 14, color: Colors.grey),
       ),
@@ -25,6 +30,7 @@ class WatchedListCard extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => MovieDetailsScreen(
               movie: movie,
+              queueId: queueId,
               showAddButton: false,
               showRemoveButton: true, // Lógica de assistido
               watched: true,

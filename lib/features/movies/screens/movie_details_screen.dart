@@ -8,12 +8,14 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 class MovieDetailsScreen extends StatefulWidget {
   final Movie movie;
   final bool showAddButton;
+  final String? queueId;
   final bool showRemoveButton;
   final bool watched;
 
   const MovieDetailsScreen({
     super.key,
     required this.movie,
+    this.queueId,
     this.showAddButton = true,
     this.showRemoveButton = false,
     required this.watched,
@@ -25,44 +27,47 @@ class MovieDetailsScreen extends StatefulWidget {
 
 class MovieDetailsScreenState extends State<MovieDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  late Movie movie;
-  late bool showAddButton;
-  late bool showRemoveButton;
-  late bool watched;
 
-  @override
-  void initState() {
-    super.initState();
-    movie = widget.movie;
-    showAddButton = widget.showAddButton;
-    showRemoveButton = widget.showRemoveButton;
-    watched = widget.watched;
+  void _showErrorSnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
   }
 
   Widget? _buildBottomButton(BuildContext context) {
-    if (showAddButton) {
+    if (widget.showAddButton) {
       return Padding(
         padding: const EdgeInsets.all(16.0),
         child: CustomButton(
           text: 'Adicionar à Fila',
           onPressed: () async {
+            final queueId = widget.queueId;
+            if (queueId == null) {
+              _showErrorSnackbar(
+                "Erro: Fila não identificada para adicionar o filme.",
+              );
+              return;
+            }
             Navigator.pop(context, false);
-            final success = await _firestoreService.addMovieToUpcoming(movie);
-            if (!context.mounted) return;
-            if (success) {
+            try {
+              await _firestoreService.addMovieToUpcoming(
+                widget.movie,
+                widget.queueId!,
+              );
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${movie.title} adicionado à lista!'),
+                  content: Text('${widget.movie.title} adicionado!'),
                   backgroundColor: Colors.green,
                 ),
               );
               Navigator.pop(context);
-            } else {
+            } catch (e) {
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Este filme já está na sua lista ou já foi assistido.',
-                  ),
+                  content: Text(e.toString()),
                   backgroundColor: Colors.orangeAccent,
                 ),
               );
@@ -71,20 +76,32 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
         ),
       );
     }
-    if (showRemoveButton) {
-      if (watched) {
+    if (widget.showRemoveButton) {
+      if (widget.watched) {
         return Padding(
           padding: const EdgeInsets.all(16.0),
           child: CustomButton(
             text: 'Remover dos Assistidos',
             backgroundColor: Colors.redAccent,
             onPressed: () async {
+              final queueId = widget.queueId;
+              if (queueId == null) {
+                _showErrorSnackbar(
+                  "Erro: Fila não identificada para remover o filme.",
+                );
+                return;
+              }
               Navigator.pop(context);
-              await _firestoreService.removeMovieFromWatched(movie);
+              await _firestoreService.removeMovieFromWatched(
+                widget.movie,
+                queueId,
+              );
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${movie.title} removido dos assistidos.'),
+                  content: Text(
+                    '${widget.movie.title} removido dos assistidos.',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -98,12 +115,25 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
             text: 'Remover dos Proximos',
             backgroundColor: Colors.redAccent,
             onPressed: () async {
+              final queueId = widget.queueId;
+
+              if (queueId == null) {
+                _showErrorSnackbar(
+                  "Erro: Fila não identificada para remover o filme.",
+                );
+                return;
+              }
               Navigator.pop(context);
-              await _firestoreService.removeMovieFromUpcoming(movie);
+              await _firestoreService.removeMovieFromUpcoming(
+                widget.movie,
+                queueId,
+              );
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${movie.title} removido dos assistidos.'),
+                  content: Text(
+                    '${widget.movie.title} removido dos assistidos.',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -119,7 +149,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(movie.title),
+        title: Text(widget.movie.title),
         backgroundColor: AppColors.formBackground,
       ),
       body: SingleChildScrollView(
@@ -127,7 +157,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Image.network(
-              movie.fullPosterUrl,
+              widget.movie.fullPosterUrl,
               width: double.infinity,
               height: 300,
               fit: BoxFit.cover,
@@ -145,7 +175,7 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    movie.title,
+                    widget.movie.title,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -154,16 +184,18 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
                   const SizedBox(height: 8),
                   Text(
-                    'Lançamento: ${movie.releaseDate}',
+                    'Lançamento: ${widget.movie.releaseDate}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontStyle: FontStyle.italic,
                       color: Colors.grey,
                     ),
                   ),
-                  if (watched)
+                  if (widget.watched && widget.queueId != null)
                     RatingBar.builder(
-                      initialRating: movie.rating != null ? movie.rating! : 3,
+                      initialRating: widget.movie.rating != null
+                          ? widget.movie.rating!
+                          : 3,
                       minRating: 1,
                       direction: Axis.horizontal,
                       allowHalfRating: true,
@@ -172,7 +204,11 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       itemBuilder: (context, _) =>
                           Icon(Icons.star, color: Colors.amber),
                       onRatingUpdate: (rating) {
-                        _firestoreService.updateMovieRating(movie, rating);
+                        _firestoreService.updateMovieRating(
+                          widget.movie,
+                          rating,
+                          widget.queueId!,
+                        );
                       },
                     ),
                   const SizedBox(height: 16),
@@ -182,8 +218,8 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    movie.overview.isNotEmpty
-                        ? movie.overview
+                    widget.movie.overview.isNotEmpty
+                        ? widget.movie.overview
                         : 'Sinopse não disponível.',
                     style: const TextStyle(fontSize: 16, height: 1.5),
                   ),

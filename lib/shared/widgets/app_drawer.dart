@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart';
 import 'package:movie_queue/shared/constants/app_colors.dart';
 import '../../app/services/auth_service.dart';
 import '../../features/movies/screens/movie_list_screen.dart';
@@ -37,7 +38,7 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MovieListScreen(
+                        builder: (context) => const QueueLoaderScreen(
                           screenType: ScreenType.upcoming,
                         ),
                       ),
@@ -55,7 +56,7 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MovieListScreen(
+                        builder: (context) => const QueueLoaderScreen(
                           screenType: ScreenType.watched,
                         ),
                       ),

@@ -6,107 +6,160 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String? get _userId => _auth.currentUser?.uid;
-
-  Future<bool> addMovieToUpcoming(Movie movie) async {
-    if (_userId == null) return false;
-    final docRef = _db.collection('users').doc(_userId);
-    final docSnapshot = await docRef.get();
-
-    if (docSnapshot.exists) {
-      final data = docSnapshot.data() as Map<String, dynamic>;
-      final upcomingMovies = (data['upcoming_movies'] as List<dynamic>?) ?? [];
-      if (upcomingMovies.any((m) => m['id'] == movie.id)) {
-        return false;
-      }
-      final watchedMovies = (data['watched_movies'] as List<dynamic>?) ?? [];
-      if (watchedMovies.any((m) => m['id'] == movie.id)) {
-        return false;
-      }
-    }
-
-    await docRef.set({
-      'upcoming_movies': FieldValue.arrayUnion([movie.toMap()]),
-    }, SetOptions(merge: true));
-    return true;
-  }
-
-  Future<void> moveUpcomingToWatched(Movie movie) async {
-    if (_userId == null) return;
-    final docRef = _db.collection('users').doc(_userId);
-    final now = DateTime.now();
-    final dateOnly = DateTime(now.year, now.month, now.day);
-    final watchedMovieMap = {
-      ...movie.toMap(),
-      'watched_date': Timestamp.fromDate(dateOnly),
-    };
-
-    await docRef.update({
-      'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
-
-      'watched_movies': FieldValue.arrayUnion([watchedMovieMap]),
-    });
-  }
-
-  Future<void> removeMovieFromWatched(Movie movie) async {
-    if (_userId == null) return;
-    final docRef = _db.collection('users').doc(_userId);
-
-    final Map<String, dynamic> movieMap = movie.toMap();
-
-    if (movie.watchedDate != null) {
-      movieMap['watched_date'] = Timestamp.fromDate(movie.watchedDate!);
-    }
-
-    await docRef.update({
-      'watched_movies': FieldValue.arrayRemove([movieMap]),
-    });
-  }
-
-  Future<void> removeMovieFromUpcoming(Movie movie) async {
-    if (_userId == null) return;
-    final docRef = _db.collection('users').doc(_userId);
-    await docRef.update({
-      'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
-    });
-  }
-
-  Future<void> updateUpcomingOrder(List<Movie> movies) async {
-    if (_userId == null) return;
-    final docRef = _db.collection('users').doc(_userId);
-    final List<Map<String, dynamic>> movieMaps = movies
-        .map((m) => m.toMap())
-        .toList();
-    await docRef.update({'upcoming_movies': movieMaps});
+  // --- Métodos de Leitura (Streams) ---
+  Stream<DocumentSnapshot> getQueueStream(String queueId) {
+    return _db.collection('queues').doc(queueId).snapshots();
   }
 
   Stream<DocumentSnapshot> getUserDocStream() {
-    if (_userId == null) return const Stream.empty();
-    return _db.collection('users').doc(_userId).snapshots();
+    final user = _auth.currentUser;
+    if (user == null) throw Exception("Usuário não autenticado");
+    return _db.collection('users').doc(user.uid).snapshots();
   }
 
-  Future<void> updateMovieRating(Movie movie, double newRating) async {
-    if (_userId == null) return;
-    final docRef = _db.collection('users').doc(_userId);
+  // --- Métodos de Gerenciamento de Usuário e Fila ---
+  Future<void> createInitialQueueForUser(User user, String displayName) async {
+    final newQueueRef = _db.collection('queues').doc();
+    await newQueueRef.set({
+      'ownerId': user.uid,
+      'members': [user.uid],
+      'upcoming_movies': [],
+      'watched_movies': [],
+    });
+    await _db.collection('users').doc(user.uid).set({
+      'displayName': displayName,
+      'email': user.email,
+      'activeQueueId': newQueueRef.id,
+    });
+  }
 
-    final docSnapshot = await docRef.get();
+  Future<QuerySnapshot> findUserByName(String name) {
+    return _db
+        .collection('users')
+        .where('displayName', isEqualTo: name)
+        .limit(1)
+        .get();
+  }
 
-    if (docSnapshot.exists) {
-      final data = await docRef.get();
+  Future<void> shareQueueWithUser(String friendId, String queueId) async {
+    final queueRef = _db.collection('queues').doc(queueId);
+    await queueRef.update({
+      'members': FieldValue.arrayUnion([friendId]),
+    });
+    final userRef = _db.collection('users').doc(friendId);
+    await userRef.update({'activeQueueId': queueId});
+  }
 
-      final List<dynamic> watchedMovies = List.from(
-        data['watched_movies'] ?? [],
-      );
+  // --- Métodos de Manipulação de Filmes (Otimizados) ---
 
-      final int movieIndex = watchedMovies.indexWhere(
-        (m) => m['id'] == movie.id,
-      );
+  Future<void> addMovieToUpcoming(Movie movie, String queueId) async {
+    final docRef = _db.collection('queues').doc(queueId);
 
-      if (movieIndex != -1) {
-        watchedMovies[movieIndex]['rating'] = newRating;
-
-        await docRef.update({'watched_movies': watchedMovies});
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) {
+        throw Exception("Fila não existe!");
       }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final upcomingMovies = (data['upcoming_movies'] as List<dynamic>? ?? [])
+          .map((m) => Movie.fromMap(m))
+          .toList();
+      final watchedMovies = (data['watched_movies'] as List<dynamic>? ?? [])
+          .map((m) => Movie.fromMap(m))
+          .toList();
+
+      // Verifica se o filme já existe em qualquer uma das listas
+      final alreadyExists =
+          upcomingMovies.any((m) => m.id == movie.id) ||
+          watchedMovies.any((m) => m.id == movie.id);
+
+      if (alreadyExists) {
+        // Lança uma exceção para sinalizar que o filme já existe.
+        // O código na UI pode capturar isso e mostrar uma mensagem.
+        throw Exception('Filme já existe na sua fila.');
+      }
+
+      // Se não existir, adiciona o filme
+      transaction.update(docRef, {
+        'upcoming_movies': FieldValue.arrayUnion([movie.toMap()]),
+      });
+    });
+  }
+
+  // <<< MUDANÇA: Adicionado try/catch e padronizado para Future<void>
+  Future<void> moveUpcomingToWatched(Movie movie, String queueId) async {
+    try {
+      final docRef = _db.collection('queues').doc(queueId);
+      await docRef.update({
+        'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
+        'watched_movies': FieldValue.arrayUnion([
+          movie.copyWith(watchedAt: DateTime.now()).toMap(),
+        ]),
+      });
+    } catch (e) {
+      print('Erro ao mover filme para assistidos: $e');
+      rethrow; // Re-lança o erro para a UI poder tratar
+    }
+  }
+
+  Future<void> removeMovieFromUpcoming(Movie movie, String queueId) async {
+    try {
+      final docRef = _db.collection('queues').doc(queueId);
+      await docRef.update({
+        'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
+      });
+    } catch (e) {
+      print('Erro ao remover filme da fila: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeMovieFromWatched(Movie movie, String queueId) async {
+    try {
+      final docRef = _db.collection('queues').doc(queueId);
+      await docRef.update({
+        'watched_movies': FieldValue.arrayRemove([movie.toMap()]),
+      });
+    } catch (e) {
+      print('Erro ao remover filme dos assistidos: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateUpcomingOrder(List<Movie> movies, String queueId) async {
+    try {
+      final docRef = _db.collection('queues').doc(queueId);
+      final movieMaps = movies.map((m) => m.toMap()).toList();
+      await docRef.update({'upcoming_movies': movieMaps});
+    } catch (e) {
+      print('Erro ao reordenar filmes: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateMovieRating(
+    Movie movie,
+    double rating,
+    String queueId,
+  ) async {
+    final docRef = _db.collection('queues').doc(queueId);
+    try {
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) return;
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      final List<dynamic> watchedList =
+          (data['watched_movies'] as List<dynamic>?) ?? [];
+      final newWatchedList = watchedList.map((movieData) {
+        final movieFromDb = Movie.fromMap(movieData as Map<String, dynamic>);
+        return (movieFromDb.id == movie.id)
+            ? movieFromDb.copyWith(rating: rating).toMap()
+            : movieData;
+      }).toList();
+      await docRef.update({'watched_movies': newWatchedList});
+    } catch (e) {
+      print('Erro ao atualizar o rating do filme: $e');
+      rethrow;
     }
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart';
+import 'package:movie_queue/features/movies/screens/movie_list_screen.dart';
 import 'firebase_options.dart'; // Arquivo gerado pelo FlutterFire
 import 'features/auth/screens/login_screen.dart';
-import 'features/movies/screens/movie_list_screen.dart';
 import 'package:flutter/rendering.dart';
 
 void main() async {
@@ -45,7 +46,7 @@ class AuthGate extends StatelessWidget {
           return const LoginScreen();
         }
         // Se tem dados (usuário logado), mostra a tela de filmes
-        return const MovieListScreen(screenType: ScreenType.upcoming);
+        return const QueueLoaderScreen(screenType: ScreenType.upcoming);
       },
     );
   }

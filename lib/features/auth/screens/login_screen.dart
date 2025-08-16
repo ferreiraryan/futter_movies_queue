@@ -7,7 +7,6 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // O código ficou muito mais limpo!
     return const MainBackground(
       body: Center(
         child: Padding(

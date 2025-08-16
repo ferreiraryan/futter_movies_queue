@@ -7,11 +7,13 @@ import '../models/movie_model.dart';
 class FeaturedMovieCard extends StatelessWidget {
   final Movie movie;
   final VoidCallback onMarkedAsWatched;
+  final String queueId;
 
   const FeaturedMovieCard({
     super.key,
     required this.movie,
     required this.onMarkedAsWatched,
+    required this.queueId,
   });
 
   @override
@@ -29,6 +31,7 @@ class FeaturedMovieCard extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => MovieDetailsScreen(
                   movie: movie,
+                  queueId: queueId,
                   showAddButton: false,
                   showRemoveButton: false,
                   watched: false,

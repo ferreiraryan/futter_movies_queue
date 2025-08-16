@@ -8,14 +8,20 @@ import '../../../app/services/firestore_service.dart';
 import '../../../shared/constants/app_colors.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../models/movie_model.dart';
-import '../widgets/movie_list.dart'; // Corrigi o import que faltava
+import '../widgets/movie_list.dart';
 import 'movie_search_screen.dart';
 
 enum ScreenType { upcoming, watched }
 
 class MovieListScreen extends StatefulWidget {
   final ScreenType screenType;
-  const MovieListScreen({super.key, required this.screenType});
+  final String queueId;
+  const MovieListScreen({
+    super.key,
+    required this.screenType,
+    required this.queueId,
+  });
+
   @override
   State<MovieListScreen> createState() => _MovieListScreenState();
 }
@@ -38,33 +44,35 @@ class _MovieListScreenState extends State<MovieListScreen> {
         ? 'upcoming_movies'
         : 'watched_movies';
 
-    _movieSubscription = _firestoreService.getUserDocStream().listen(
-      (snapshot) {
-        if (!mounted) return;
+    _movieSubscription = _firestoreService
+        .getQueueStream(widget.queueId)
+        .listen(
+          (snapshot) {
+            if (!mounted) return;
 
-        List<Movie> newMovies = [];
-        if (snapshot.exists && snapshot.data() != null) {
-          final userData = snapshot.data() as Map<String, dynamic>;
-          final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
-          newMovies = movieDataList
-              .map((data) => Movie.fromMap(data as Map<String, dynamic>))
-              .toList();
-        }
+            List<Movie> newMovies = [];
+            if (snapshot.exists && snapshot.data() != null) {
+              final userData = snapshot.data() as Map<String, dynamic>;
+              final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
+              newMovies = movieDataList
+                  .map((data) => Movie.fromMap(data as Map<String, dynamic>))
+                  .toList();
+            }
 
-        setState(() {
-          _movies = newMovies;
-          _isLoading = false;
-        });
-      },
-      onError: (error) {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          // Você pode adicionar uma variável de estado de erro aqui se quiser
-        });
-        // TODO: Lidar com o erro, talvez mostrando um SnackBar
-      },
-    );
+            setState(() {
+              _movies = newMovies;
+              _isLoading = false;
+            });
+          },
+          onError: (error) {
+            if (!mounted) return;
+            setState(() {
+              _isLoading = false;
+              // Você pode adicionar uma variável de estado de erro aqui se quiser
+            });
+            // TODO: Lidar com o erro, talvez mostrando um SnackBar
+          },
+        );
   }
 
   @override
@@ -93,8 +101,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
       header: isUpcoming
           ? FeaturedMovieCard(
               movie: _movies.first,
+              queueId: widget.queueId,
               onMarkedAsWatched: () {
-                _firestoreService.moveUpcomingToWatched(_movies.first);
+                _firestoreService.moveUpcomingToWatched(
+                  _movies.first,
+                  widget.queueId,
+                );
               },
             )
           : null,
@@ -107,6 +119,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   Widget _buildUpcomingBody() {
     final reorderableMovies = _movies.sublist(1);
     return ReorderableMovieList(
+      queueId: widget.queueId,
       key: const ValueKey('reorderable_list'),
       reorderableMovies: reorderableMovies,
       onReorder: (oldIndex, newIndex) {
@@ -115,7 +128,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
           final movie = _movies.removeAt(oldIndex + 1);
           _movies.insert(newIndex + 1, movie);
         });
-        _firestoreService.updateUpcomingOrder(_movies);
+        _firestoreService.updateUpcomingOrder(_movies, widget.queueId);
       },
     );
   }
@@ -128,7 +141,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
       itemCount: _movies.length,
       itemBuilder: (context, index) {
         final movie = _movies[index];
-        return WatchedListCard(key: ValueKey(movie.id), movie: movie);
+        return WatchedListCard(
+          queueId: widget.queueId,
+          key: ValueKey(movie.id),
+          movie: movie,
+        );
       },
     );
   }

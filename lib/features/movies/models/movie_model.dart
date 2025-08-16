@@ -3,65 +3,84 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Movie {
   final int id;
   final String title;
-  final String? posterPath;
   final String overview;
+  final String posterPath;
   final String releaseDate;
+  final DateTime? watchedAt;
   final double? rating;
-  final DateTime? watchedDate;
 
   Movie({
     required this.id,
     required this.title,
-    this.posterPath,
     required this.overview,
+    required this.posterPath,
     required this.releaseDate,
+    this.watchedAt,
     this.rating,
-    this.watchedDate,
   });
-
-  factory Movie.fromJson(Map<String, dynamic> json) => Movie(
-    id: json['id'],
-    title: json['title'],
-    posterPath: json['poster_path'],
-    overview: json['overview'] ?? 'Sinopse não disponível.',
-    releaseDate: json['release_date'] ?? 'Data não informada.',
-  );
-
-  factory Movie.fromMap(Map<String, dynamic> map) {
-    final num? ratingValue = map['rating'];
-
+  factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
-      id: map['id'],
-      title: map['title'],
-      posterPath: map['poster_path'],
-      overview: map['overview'],
-      releaseDate: map['release_date'],
-      rating: ratingValue?.toDouble(),
-      watchedDate: map['watched_date'] != null
-          ? (map['watched_date'] as Timestamp).toDate()
-          : null,
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      overview: json['overview'] ?? '',
+      posterPath: json['poster_path'] ?? '',
+      releaseDate: json['release_date'] ?? '',
+      // watchedAt e rating serão nulos por padrão, pois esses dados não vêm da API.
+      // Eles são adicionados depois, pela interação do usuário.
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'title': title,
-    'poster_path': posterPath,
-    'overview': overview,
-    'release_date': releaseDate,
-    'rating': rating,
-  };
+  factory Movie.fromMap(Map<String, dynamic> map) {
+    return Movie(
+      id: map['id'] ?? 0,
+      title: map['title'] ?? '',
+      overview: map['overview'] ?? '',
+      posterPath: map['poster_path'] ?? '',
+      releaseDate: map['release_date'] ?? '',
+      watchedAt: map['watched_at'] != null
+          ? (map['watched_at'] as Timestamp).toDate()
+          : null,
 
-  String get fullPosterUrl => (posterPath != null && posterPath!.isNotEmpty)
-      ? 'https://image.tmdb.org/t/p/w500$posterPath'
-      : 'https://placehold.co/500x750/4B3A71/FFFFFF?text=Sem+Imagem';
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Movie && other.id == id;
+      rating: (map['rating'] as num?)?.toDouble(),
+    );
   }
 
-  @override
-  int get hashCode => id.hashCode;
+  String get fullPosterUrl {
+    if (posterPath.isNotEmpty) {
+      return 'https://image.tmdb.org/t/p/w500$posterPath';
+    }
+    return 'https://via.placeholder.com/500x750.png?text=No+Image';
+  }
+
+  Movie copyWith({
+    int? id,
+    String? title,
+    String? overview,
+    String? posterPath,
+    String? releaseDate,
+    DateTime? watchedAt,
+    double? rating,
+  }) {
+    return Movie(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      overview: overview ?? this.overview,
+      posterPath: posterPath ?? this.posterPath,
+      releaseDate: releaseDate ?? this.releaseDate,
+      watchedAt: watchedAt ?? this.watchedAt,
+      rating: rating ?? this.rating,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'overview': overview,
+      'poster_path': posterPath,
+      'release_date': releaseDate,
+      'watched_at': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
+      'rating': rating,
+    };
+  }
 }

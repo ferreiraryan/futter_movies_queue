@@ -5,11 +5,13 @@ import '../models/movie_model.dart';
 class ReorderableMovieList extends StatelessWidget {
   final List<Movie> reorderableMovies;
   final Function(int, int) onReorder;
+  final String queueId;
 
   const ReorderableMovieList({
     super.key,
     required this.reorderableMovies,
     required this.onReorder,
+    required this.queueId,
   });
 
   @override
@@ -21,7 +23,11 @@ class ReorderableMovieList extends StatelessWidget {
       itemCount: reorderableMovies.length,
       itemBuilder: (context, index) {
         final movie = reorderableMovies[index];
-        return UpcomingListCard(key: ValueKey(movie.id), movie: movie);
+        return UpcomingListCard(
+          key: ValueKey(movie.id),
+          movie: movie,
+          queueId: queueId,
+        );
       },
       onReorder: onReorder,
     );
