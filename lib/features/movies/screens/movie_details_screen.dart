@@ -168,7 +168,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           children: [
             // Pôster do filme
             Image.network(
-              // Usamos a nova imagem de fundo se ela existir!
               widget.movie.fullBackdropUrl,
               width: double.infinity,
               height: 250,
@@ -178,8 +177,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                 color: Colors.grey[800],
                 child: const Center(child: Icon(Icons.movie, size: 100)),
               ),
-            ),
-            // Seção de detalhes
+            ), // Seção de detalhes
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(

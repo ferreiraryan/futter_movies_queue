@@ -181,11 +181,26 @@ class FirestoreService {
     });
   }
 
-  Future<void> removeMovieFromWatched(Movie movie, String queueId) async {
+  Future<void> removeMovieFromWatched(
+    Movie movieToRemove,
+    String queueId,
+  ) async {
     final docRef = _db.collection('queues').doc(queueId);
-    await docRef.update({
-      'watched_movies': FieldValue.arrayRemove([movie.toMap()]),
-    });
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()! as Map<String, dynamic>;
+
+    // 1. Pega a lista de "assistidos"
+    final List<dynamic> watchedListRaw = data['watched_movies'] ?? [];
+    List<Map<String, dynamic>> updatedWatchedList = List.from(watchedListRaw);
+
+    // 2. Remove o filme da lista pelo seu ID único
+    updatedWatchedList.removeWhere((m) => m['id'] == movieToRemove.id);
+
+    // 3. Salva a lista atualizada de volta no Firestore
+    await docRef.update({'watched_movies': updatedWatchedList});
   }
 
   // --- NOVOS MÉTODOS PARA O SISTEMA DE CONVITES ---
