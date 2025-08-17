@@ -281,4 +281,8 @@ class FirestoreService {
       'status': 'declined',
     });
   }
+
+  Future<DocumentSnapshot> getUserDocById(String userId) {
+    return _db.collection('users').doc(userId).get();
+  }
 }

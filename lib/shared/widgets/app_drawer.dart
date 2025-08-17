@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/auth_service.dart';
+import 'package:movie_queue/app/services/firestore_service.dart';
 import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart';
 import 'package:movie_queue/features/movies/screens/movie_list_screen.dart';
 import 'package:movie_queue/features/social/screens/social_screen.dart';
@@ -11,14 +13,35 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final firestoreService = FirestoreService();
     return Drawer(
       child: Column(
         children: [
-          const UserAccountsDrawerHeader(
-            accountName: Text("Movie Queue"), // TODO: Pegar nome do usuário
-            accountEmail: Text(
-              "Menu de Navegação",
-            ), // TODO: Pegar email do usuário
+          StreamBuilder<DocumentSnapshot>(
+            // <<< PASSO 2: USAR A CASA CONSTRUÍDA (A INSTÂNCIA) >>>
+            stream: firestoreService.getUserDocStream(),
+            builder: (context, snapshot) {
+              String name = 'Movie Queue';
+              String email = 'Bem-vindo!';
+              String initial = 'M';
+
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final userData = snapshot.data!.data() as Map<String, dynamic>;
+                name = userData['displayName'] ?? name;
+                email = userData['email'] ?? email;
+                if (name.isNotEmpty) {
+                  initial = name[0].toUpperCase();
+                }
+              }
+
+              return UserAccountsDrawerHeader(
+                accountName: Text(name),
+                accountEmail: Text(email),
+                currentAccountPicture: CircleAvatar(
+                  child: Text(initial, style: const TextStyle(fontSize: 24)),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.movie_filter_outlined),

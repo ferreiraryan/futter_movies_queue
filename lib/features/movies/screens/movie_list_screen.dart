@@ -8,6 +8,7 @@ import 'package:movie_queue/features/movies/screens/movie_search_screen.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/upcoming_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/watched_movie_card.dart';
+import 'package:movie_queue/features/social/widgets/rating_breakdown_dialog.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart'; // Criaremos em breve
 
 // Enum para definir o tipo de lista a ser exibida
@@ -119,20 +120,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
           // <<< MUDANÇA PRINCIPAL AQUI >>>
           // Substituímos o ListTile pelo nosso novo card
-          return WatchedMovieCard(
-            movie: movie,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => MovieDetailsScreen(
-                    movie: movie,
-                    queueId: widget.queueId,
-                    context: MovieDetailsContext.watched,
-                  ),
-                ),
-              );
-            },
-          );
+          return WatchedMovieCard(movie: movie, queueId: widget.queueId);
         },
       );
     }

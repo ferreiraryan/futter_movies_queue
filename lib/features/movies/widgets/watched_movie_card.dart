@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import para formatação de data
 import 'package:movie_queue/features/movies/models/movie_model.dart';
+import 'package:movie_queue/features/social/widgets/rating_breakdown_dialog.dart';
 
 class WatchedMovieCard extends StatelessWidget {
   final Movie movie;
-  final VoidCallback onTap;
-
-  const WatchedMovieCard({super.key, required this.movie, required this.onTap});
+  final String queueId;
+  const WatchedMovieCard({
+    super.key,
+    required this.movie,
+    required this.queueId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +25,14 @@ class WatchedMovieCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          // <<< MUDANÇA AQUI: Passa o queueId para o dialog >>>
+          showDialog(
+            context: context,
+            builder: (context) =>
+                RatingBreakdownDialog(movie: movie, queueId: queueId),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(

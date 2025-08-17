@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/features/social/widgets/member_card.dart';
 import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
 
@@ -174,12 +175,7 @@ class _SocialScreenState extends State<SocialScreen> {
                       child: ListView.builder(
                         itemCount: members.length,
                         itemBuilder: (context, index) {
-                          return ListTile(
-                            leading: const Icon(Icons.person),
-                            title: Text(
-                              'Membro ${index + 1} (ID: ${members[index]})',
-                            ), // Placeholder
-                          );
+                          return MemberCard(memberId: members[index]);
                         },
                       ),
                     ),
