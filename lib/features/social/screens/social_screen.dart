@@ -6,8 +6,8 @@ import 'package:movie_queue/features/movies/models/movie_model.dart';
 import 'package:movie_queue/features/social/widgets/hall_of_fame_card.dart';
 import 'package:movie_queue/features/social/widgets/member_card.dart';
 import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
+import 'package:movie_queue/features/social/widgets/stats_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
-import 'package:movie_queue/shared/widgets/stats_card.dart';
 
 class SocialScreen extends StatefulWidget {
   final String queueId;
