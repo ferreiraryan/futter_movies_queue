@@ -78,7 +78,7 @@ class AppDrawer extends StatelessWidget {
               // Navega para a nova SocialScreen
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (context) => SocialScreen(queueId: queueId),
+                  builder: (context) => SocialScreenProvider(queueId: queueId),
                 ),
               );
             },
