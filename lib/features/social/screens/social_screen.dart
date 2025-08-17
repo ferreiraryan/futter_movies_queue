@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/features/movies/models/movie_model.dart';
+import 'package:movie_queue/features/social/widgets/hall_of_fame_card.dart';
 import 'package:movie_queue/features/social/widgets/member_card.dart';
 import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
@@ -17,6 +19,35 @@ class SocialScreen extends StatefulWidget {
 class _SocialScreenState extends State<SocialScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _emailController = TextEditingController();
+
+  Map<String, dynamic>? _findTopRatedMovie(List<dynamic> watchedMoviesRaw) {
+    if (watchedMoviesRaw.isEmpty) return null;
+
+    Movie? topMovie;
+    double maxAverage = 0.0;
+
+    // 1. Itera por cada filme na lista de assistidos
+    for (var movieData in watchedMoviesRaw) {
+      final movie = Movie.fromMap(movieData);
+      final ratings = movie.ratings;
+
+      // 2. Se o filme tem notas, calcula a média
+      if (ratings != null && ratings.isNotEmpty) {
+        double currentSum = ratings.values.reduce((a, b) => a + b);
+        double currentAverage = currentSum / ratings.length;
+
+        // 3. Compara com a maior média encontrada até agora
+        if (currentAverage > maxAverage) {
+          maxAverage = currentAverage;
+          topMovie = movie;
+        }
+      }
+    }
+
+    if (topMovie == null) return null;
+
+    return {'movie': topMovie, 'averageRating': maxAverage};
+  }
 
   // Função para mostrar o popup de convite
   void _showInviteDialog() {
@@ -111,6 +142,10 @@ class _SocialScreenState extends State<SocialScreen> {
                     queueSnapshot.data!.data() as Map<String, dynamic>;
                 final List<dynamic> members = queueData['members'] ?? [];
 
+                final List<dynamic> watchedMoviesRaw =
+                    queueData['watched_movies'] ?? [];
+                final topRatedResult = _findTopRatedMovie(watchedMoviesRaw);
+
                 // CASO 1: Usuário está sozinho na fila
                 if (members.length <= 1) {
                   return Center(
@@ -158,9 +193,13 @@ class _SocialScreenState extends State<SocialScreen> {
                 }
 
                 // CASO 2: Há mais gente na fila
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return ListView(
                   children: [
+                    if (topRatedResult != null)
+                      HallOfFameCard(
+                        movie: topRatedResult['movie'],
+                        averageRating: topRatedResult['averageRating'],
+                      ),
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text(
@@ -171,13 +210,14 @@ class _SocialScreenState extends State<SocialScreen> {
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: members.length,
-                        itemBuilder: (context, index) {
-                          return MemberCard(memberId: members[index]);
-                        },
-                      ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics:
+                          const NeverScrollableScrollPhysics(), // Desativa o scroll desta lista
+                      itemCount: members.length,
+                      itemBuilder: (context, index) {
+                        return MemberCard(memberId: members[index]);
+                      },
                     ),
                   ],
                 );
