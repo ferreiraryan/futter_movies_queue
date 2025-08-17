@@ -4,9 +4,21 @@ import 'package:flutter/material.dart';
 
 class StatsCard extends StatelessWidget {
   final int movieCount;
-  // No futuro, podemos adicionar mais estatísticas aqui, como totalHours, etc.
+  final int totalMinutes;
 
-  const StatsCard({super.key, required this.movieCount});
+  const StatsCard({
+    super.key,
+    required this.movieCount,
+    required this.totalMinutes,
+  });
+
+  String _formatDuration(int totalMinutes) {
+    if (totalMinutes == 0) return '0h 0m';
+    final duration = Duration(minutes: totalMinutes);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    return '${hours}h ${minutes}m';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +29,18 @@ class StatsCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            // Stat 1: Filmes Vistos
             _buildStatItem(
               value: movieCount.toString(),
               label: 'Filmes Vistos',
               icon: Icons.theaters,
               color: Colors.orangeAccent,
             ),
-            // Adicione mais _buildStatItem aqui no futuro para outras estatísticas
+            _buildStatItem(
+              value: _formatDuration(totalMinutes),
+              label: 'Horas Juntos',
+              icon: Icons.timer,
+              color: Colors.lightBlueAccent,
+            ),
           ],
         ),
       ),

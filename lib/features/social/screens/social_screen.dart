@@ -145,6 +145,15 @@ class _SocialScreenState extends State<SocialScreen> {
 
                 final List<dynamic> watchedMoviesRaw =
                     queueData['watched_movies'] ?? [];
+
+                final int totalMinutes = watchedMoviesRaw.fold(0, (
+                  sum,
+                  movieData,
+                ) {
+                  final runtime = (movieData['runtime'] ?? 0) as int;
+                  return sum + runtime;
+                });
+
                 final topRatedResult = _findTopRatedMovie(watchedMoviesRaw);
 
                 // CASO 1: Usuário está sozinho na fila
@@ -201,7 +210,10 @@ class _SocialScreenState extends State<SocialScreen> {
                         movie: topRatedResult['movie'],
                         averageRating: topRatedResult['averageRating'],
                       ),
-                    StatsCard(movieCount: watchedMoviesRaw.length),
+                    StatsCard(
+                      movieCount: watchedMoviesRaw.length,
+                      totalMinutes: totalMinutes,
+                    ),
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text(

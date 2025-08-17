@@ -8,7 +8,6 @@ import 'package:movie_queue/features/movies/screens/movie_search_screen.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/upcoming_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/watched_movie_card.dart';
-import 'package:movie_queue/features/social/widgets/rating_breakdown_dialog.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart'; // Criaremos em breve
 
 // Enum para definir o tipo de lista a ser exibida
