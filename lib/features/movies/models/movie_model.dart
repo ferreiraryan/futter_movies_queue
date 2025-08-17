@@ -15,6 +15,7 @@ class Movie {
   final String? backdropPath; // Imagem de fundo
   final double? tmdbRating; // Nota média do TMDB
   final String? tagline; // Slogan do filme
+  final String? addedBy;
 
   Movie({
     required this.id,
@@ -30,6 +31,7 @@ class Movie {
     this.backdropPath,
     this.tmdbRating,
     this.tagline,
+    this.addedBy,
   });
 
   String get fullPosterUrl {
@@ -67,6 +69,7 @@ class Movie {
       'backdropPath': backdropPath,
       'tmdbRating': tmdbRating,
       'tagline': tagline,
+      'addedBy': addedBy,
     };
   }
 
@@ -88,6 +91,7 @@ class Movie {
       backdropPath: map['backdropPath'],
       tmdbRating: (map['tmdbRating'] as num?)?.toDouble(),
       tagline: map['tagline'],
+      addedBy: map['addedBy'],
     );
   }
 
@@ -116,6 +120,7 @@ class Movie {
     String? backdropPath,
     double? tmdbRating,
     String? tagline,
+    String? addedBy,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -130,6 +135,7 @@ class Movie {
       backdropPath: backdropPath ?? this.backdropPath,
       tmdbRating: tmdbRating ?? this.tmdbRating,
       tagline: tagline ?? this.tagline,
+      addedBy: addedBy ?? this.addedBy,
     );
   }
 }
