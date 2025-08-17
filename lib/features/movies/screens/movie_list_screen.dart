@@ -81,7 +81,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      drawer: const AppDrawer(), // O menu lateral para navegação
+      drawer: AppDrawer(queueId: widget.queueId),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

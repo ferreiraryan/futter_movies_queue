@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/auth_service.dart';
 import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart'; // Importe o loader
-import 'package:movie_queue/features/movies/screens/movie_list_screen.dart'; // Importe para ter o enum
+import 'package:movie_queue/features/movies/screens/movie_list_screen.dart';
+import 'package:movie_queue/features/social/screens/social_screen.dart'; // Importe para ter o enum
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final String queueId;
+  const AppDrawer({super.key, required this.queueId});
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,19 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.people_outline),
+            title: const Text('Social'),
+            onTap: () {
+              // Navega para a nova SocialScreen
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => SocialScreen(queueId: queueId),
+                ),
+              );
+            },
+          ),
+
           const Spacer(), // Empurra o botão de sair para o final
           ListTile(
             leading: const Icon(Icons.logout),

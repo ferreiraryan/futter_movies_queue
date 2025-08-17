@@ -166,7 +166,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     ),
                   ),
 
-                  // TODO: Lógica das estrelas de avaliação (rating) virá aqui
                   if (widget.context == MovieDetailsContext.watched &&
                       currentUserId != null)
                     Padding(
@@ -183,7 +182,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                           ),
                           const SizedBox(height: 8),
                           RatingBar.builder(
-                            // 1. Valor Inicial: Mostra a nota que o usuário já deu (ou 0 se for a primeira vez)
                             initialRating:
                                 widget.movie.getRatingForUser(currentUserId!) ??
                                 0,
