@@ -106,7 +106,6 @@ class Movie {
     );
   }
 
-  // <<< copyWith ATUALIZADO >>>
   Movie copyWith({
     int? id,
     String? title,

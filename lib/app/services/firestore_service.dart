@@ -110,30 +110,32 @@ class FirestoreService {
   Future<String> addMovieToUpcoming(Movie movie, String queueId) async {
     final docRef = _db.collection('queues').doc(queueId);
 
-    // Precisamos ler o documento primeiro para fazer as checagens
+    // ... (lógica de checagem para ver se o filme já existe, sem alterações)
     final doc = await docRef.get();
-    if (!doc.exists) {
-      return "Erro: Fila não encontrada.";
-    }
-
+    if (!doc.exists) return "Erro: Fila não encontrada.";
     final data = doc.data()! as Map<String, dynamic>;
     final List<dynamic> upcomingRaw = data['upcoming_movies'] ?? [];
     final List<dynamic> watchedRaw = data['watched_movies'] ?? [];
-
-    // 1. Checa se o filme já está na lista de "próximos"
     if (upcomingRaw.any((m) => m['id'] == movie.id)) {
       return "Este filme já está na sua fila.";
     }
-
-    // 2. Checa se o filme já está na lista de "assistidos"
     if (watchedRaw.any((m) => m['id'] == movie.id)) {
       return "Você já assistiu a este filme.";
     }
 
-    // 3. Se passou nas checagens, adiciona o filme.
+    // <<< MUDANÇA PRINCIPAL AQUI >>>
+    // Pega o ID do usuário logado
+    final userId = currentUserId;
+    if (userId == null) return "Erro: Usuário não identificado.";
+
+    // Cria uma cópia do filme e carimba com o ID do usuário
+    final movieWithUser = movie.copyWith(addedBy: userId);
+
+    // Salva a versão carimbada do filme
     await docRef.update({
-      'upcoming_movies': FieldValue.arrayUnion([movie.toMap()]),
+      'upcoming_movies': FieldValue.arrayUnion([movieWithUser.toMap()]),
     });
+
     return "Filme adicionado à fila!";
   }
 
@@ -215,8 +217,9 @@ class FirestoreService {
 
     // 1. Busca o documento do usuário que está convidando para pegar o nome dele.
     final userDoc = await _db.collection('users').doc(userId).get();
-    if (!userDoc.exists)
+    if (!userDoc.exists) {
       throw Exception("Documento do usuário não encontrado.");
+    }
     final inviterName = userDoc.data()?['displayName'] ?? 'Um amigo';
 
     // 2. Cria o novo documento de convite na coleção 'invites'.
@@ -233,8 +236,9 @@ class FirestoreService {
   /// Retorna um stream com todos os convites pendentes para o email do usuário logado.
   Stream<QuerySnapshot> getPendingInvitesForUser() {
     final email = currentUserEmail;
-    if (email == null)
+    if (email == null) {
       return const Stream.empty(); // Retorna stream vazio se não tiver email
+    }
 
     return _db
         .collection('invites')
@@ -263,8 +267,9 @@ class FirestoreService {
       // <<< PASSO NOVO: LER A FILA ANTIGA ANTES DE MUDAR >>>
       // Para saber de qual fila remover o usuário, primeiro lemos o documento dele.
       final userDoc = await transaction.get(userRef);
-      if (!userDoc.exists)
+      if (!userDoc.exists) {
         throw Exception("Usuário que está aceitando não foi encontrado.");
+      }
       final oldQueueId = userDoc.data()?['activeQueueId'];
 
       // 2. Atualiza o status do convite para "accepted".
