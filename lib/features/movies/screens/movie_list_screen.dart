@@ -8,7 +8,7 @@ import 'package:movie_queue/features/movies/screens/movie_search_screen.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/upcoming_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/watched_movie_card.dart';
-import 'package:movie_queue/shared/widgets/app_drawer.dart'; // Criaremos em breve
+import 'package:movie_queue/shared/widgets/app_drawer.dart';
 
 // Enum para definir o tipo de lista a ser exibida
 enum ScreenType { upcoming, watched }
@@ -117,9 +117,68 @@ class _MovieListScreenState extends State<MovieListScreen> {
         itemBuilder: (context, index) {
           final movie = _movies[index];
 
-          // <<< MUDANÇA PRINCIPAL AQUI >>>
-          // Substituímos o ListTile pelo nosso novo card
-          return WatchedMovieCard(movie: movie, queueId: widget.queueId);
+          // Envolvemos o nosso card com o widget Dismissible
+          return Dismissible(
+            // A Key é OBRIGATÓRIA e deve ser única para cada item
+            key: Key(movie.id.toString()),
+
+            // Direção do arraste (da direita para a esquerda)
+            direction: DismissDirection.endToStart,
+
+            // O que aparece no fundo enquanto o item é arrastado
+            background: Card(
+              // Usa a mesma margem do WatchedMovieCard para um alinhamento perfeito
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: Colors.redAccent,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: const [Icon(Icons.delete, color: Colors.white)],
+                ),
+              ),
+            ),
+            // A mágica do popup de confirmação acontece aqui
+            confirmDismiss: (direction) async {
+              // Mostra um dialog e espera o usuário responder (true ou false)
+              return await showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Confirmar Exclusão"),
+                    content: Text(
+                      "Tem certeza que deseja remover '${movie.title}' da sua lista de assistidos?",
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(false), // Retorna 'false'
+                        child: const Text("Cancelar"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                        ),
+                        onPressed: () {
+                          // Se confirmar, chama a função do Firestore...
+                          _firestoreService.removeMovieFromWatched(
+                            movie,
+                            widget.queueId,
+                          );
+                          // ...e retorna 'true' para confirmar a remoção da tela.
+                          Navigator.of(context).pop(true);
+                        },
+                        child: const Text("Remover"),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+
+            // O child é o nosso widget de card que já existia
+            child: WatchedMovieCard(movie: movie, queueId: widget.queueId),
+          );
         },
       );
     }
