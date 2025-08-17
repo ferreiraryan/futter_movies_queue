@@ -57,7 +57,9 @@ class FirestoreService {
 
   Future<void> updateUpcomingOrder(List<Movie> movies, String queueId) async {
     final docRef = _db.collection('queues').doc(queueId);
-    final movieMaps = movies.map((m) => m.toMap()).toList();
+    final List<Map<String, dynamic>> movieMaps = movies
+        .map((m) => m.toMap())
+        .toList();
     await docRef.update({'upcoming_movies': movieMaps});
   }
 

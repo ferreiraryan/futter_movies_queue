@@ -7,25 +7,28 @@ class TmdbService {
   static const String _baseUrl = 'https://api.themoviedb.org/3';
 
   Future<List<Movie>> searchMovies(String query) async {
-    if (_apiKey == 'SUA_API_KEY_AQUI') {
-      print(
-        'ERRO: Por favor, adicione sua API Key do TMDb no arquivo tmdb_service.dart',
-      );
+    // Se a busca estiver vazia, retorna uma lista vazia para não fazer chamadas desnecessárias
+    if (query.isEmpty) {
       return [];
     }
 
-    final response = await http.get(
-      Uri.parse(
-        '$_baseUrl/search/movie?api_key=$_apiKey&query=$query&language=pt-BR',
-      ),
+    final url = Uri.parse(
+      '$_baseUrl/search/movie?api_key=$_apiKey&query=$query&language=pt-BR',
     );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final List<dynamic> results = data['results'];
-      return results.map((json) => Movie.fromJson(json)).toList();
-    } else {
-      throw Exception('Falha ao carregar filmes');
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> results = data['results'];
+        return results.map((json) => Movie.fromJson(json)).toList();
+      } else {
+        throw Exception('Falha ao carregar filmes da API');
+      }
+    } catch (e) {
+      print("Erro ao buscar filmes: $e");
+      return [];
     }
   }
 }
