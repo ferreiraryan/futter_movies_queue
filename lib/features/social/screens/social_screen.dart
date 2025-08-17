@@ -1,8 +1,8 @@
-// lib/features/social/screens/social_screen.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
 
 class SocialScreen extends StatefulWidget {
@@ -43,12 +43,11 @@ class _SocialScreenState extends State<SocialScreen> {
                 final email = _emailController.text;
                 if (email.isNotEmpty) {
                   try {
-                    // Chama a função que criamos no nosso serviço
                     await _firestoreService.sendInvite(
                       inviteeEmail: email,
                       queueId: widget.queueId,
                     );
-                    Navigator.of(context).pop(); // Fecha o dialog
+                    Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Convite enviado com sucesso!'),
@@ -79,88 +78,117 @@ class _SocialScreenState extends State<SocialScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Social')),
       drawer: AppDrawer(queueId: widget.queueId),
-      body: StreamBuilder<DocumentSnapshot>(
-        // Ouve os dados da fila atual em tempo real
-        stream: _firestoreService.getQueueStream(widget.queueId),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          // WIDGET 1: STREAM DOS CONVITES (SEMPRE VERIFICA, INDEPENDENTE DA FILA)
+          StreamBuilder<QuerySnapshot>(
+            stream: _firestoreService.getPendingInvitesForUser(),
+            builder: (context, inviteSnapshot) {
+              if (!inviteSnapshot.hasData ||
+                  inviteSnapshot.data!.docs.isEmpty) {
+                return const SizedBox.shrink(); // Sem convites, não mostra nada
+              }
+              // Com convites, mostra a lista deles no topo
+              return Column(
+                children: inviteSnapshot.data!.docs
+                    .map((inviteDoc) => PendingInviteCard(invite: inviteDoc))
+                    .toList(),
+              );
+            },
+          ),
 
-          final queueData = snapshot.data!.data() as Map<String, dynamic>;
-          final List<dynamic> members = queueData['members'] ?? [];
+          // WIDGET 2: STREAM DO CONTEÚDO DA FILA (OCUPA O RESTO DA TELA)
+          Expanded(
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: _firestoreService.getQueueStream(widget.queueId),
+              builder: (context, queueSnapshot) {
+                if (!queueSnapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          // Se o usuário está sozinho na fila
-          if (members.length <= 1) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.group_add, size: 80, color: Colors.grey),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Você ainda está sozinho por aqui!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                final queueData =
+                    queueSnapshot.data!.data() as Map<String, dynamic>;
+                final List<dynamic> members = queueData['members'] ?? [];
+
+                // CASO 1: Usuário está sozinho na fila
+                if (members.length <= 1) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.group_add,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Você ainda está sozinho por aqui!',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Convide um amigo para compartilhar esta fila de filmes e comparar suas notas.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            onPressed: _showInviteDialog,
+                            icon: const Icon(Icons.person_add),
+                            label: const Text('Convidar Amigo'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Convide um amigo para compartilhar esta fila de filmes e comparar suas notas.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      onPressed: _showInviteDialog,
-                      icon: const Icon(Icons.person_add),
-                      label: const Text('Convidar Amigo'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
+                  );
+                }
+
+                // CASO 2: Há mais gente na fila
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Membros da Fila:',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: members.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            leading: const Icon(Icons.person),
+                            title: Text(
+                              'Membro ${index + 1} (ID: ${members[index]})',
+                            ), // Placeholder
+                          );
+                        },
+                      ),
+                    ),
                   ],
-                ),
-              ),
-            );
-          }
-
-          // Se há mais gente na fila
-          return Column(
-            children: [
-              // TODO: Mostrar o card de convite pendente (próximo passo)
-
-              // TODO: Mostrar a lista de membros e comparação de notas
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Membros da Fila:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: members.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      leading: const Icon(Icons.person),
-                      title: Text(
-                        'Membro ${index + 1} (ID: ${members[index]})',
-                      ), // Placeholder
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       // Botão flutuante só aparece se já houver amigos na fila
       floatingActionButton: StreamBuilder<DocumentSnapshot>(

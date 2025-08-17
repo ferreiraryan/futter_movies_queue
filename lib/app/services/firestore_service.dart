@@ -162,32 +162,49 @@ class FirestoreService {
   }
 
   /// Aceita um convite, movendo o usuário para a nova fila.
+  // ... dentro da classe FirestoreService
+
   Future<void> acceptInvite(String inviteId) async {
     final userId = currentUserId;
     if (userId == null) throw Exception("Usuário não autenticado.");
 
     final inviteRef = _db.collection('invites').doc(inviteId);
 
-    // Usamos uma transação para garantir que todas as operações ocorram juntas.
     await _db.runTransaction((transaction) async {
       // 1. Pega os dados do convite.
       final inviteDoc = await transaction.get(inviteRef);
       if (!inviteDoc.exists) throw Exception("Convite não encontrado.");
 
-      final queueId = inviteDoc.data()!['queueId'];
-      final queueRef = _db.collection('queues').doc(queueId);
+      final newQueueId = inviteDoc.data()!['queueId'];
       final userRef = _db.collection('users').doc(userId);
+
+      // <<< PASSO NOVO: LER A FILA ANTIGA ANTES DE MUDAR >>>
+      // Para saber de qual fila remover o usuário, primeiro lemos o documento dele.
+      final userDoc = await transaction.get(userRef);
+      if (!userDoc.exists)
+        throw Exception("Usuário que está aceitando não foi encontrado.");
+      final oldQueueId = userDoc.data()?['activeQueueId'];
 
       // 2. Atualiza o status do convite para "accepted".
       transaction.update(inviteRef, {'status': 'accepted'});
 
-      // 3. Adiciona o usuário à lista de membros da nova fila.
-      transaction.update(queueRef, {
+      // 3. Adiciona o usuário à lista de membros da NOVA fila.
+      final newQueueRef = _db.collection('queues').doc(newQueueId);
+      transaction.update(newQueueRef, {
         'members': FieldValue.arrayUnion([userId]),
       });
 
-      // 4. Atualiza a fila ativa do usuário para a nova fila.
-      transaction.update(userRef, {'activeQueueId': queueId});
+      // 4. Atualiza a fila ativa do usuário para a NOVA fila.
+      transaction.update(userRef, {'activeQueueId': newQueueId});
+
+      // <<< PASSO NOVO: REMOVER O USUÁRIO DA FILA ANTIGA >>>
+      // Se o usuário tinha uma fila antiga e ela é diferente da nova, removemos ele de lá.
+      if (oldQueueId != null && oldQueueId != newQueueId) {
+        final oldQueueRef = _db.collection('queues').doc(oldQueueId);
+        transaction.update(oldQueueRef, {
+          'members': FieldValue.arrayRemove([userId]),
+        });
+      }
     });
   }
 
