@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:movie_queue/app/services/auth_service.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 // Enum para definir o contexto/origem da tela de detalhes
 enum MovieDetailsContext { search, upcoming, watched }
@@ -24,6 +26,7 @@ class MovieDetailsScreen extends StatefulWidget {
 class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   bool _isLoading = false;
+  final currentUserId = AuthService().currentUserId;
 
   // Função que constrói o botão de ação correto baseado no contexto
   Widget? _buildActionButton() {
@@ -164,12 +167,47 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                   ),
 
                   // TODO: Lógica das estrelas de avaliação (rating) virá aqui
-                  if (widget.context == MovieDetailsContext.watched)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        'Estrelas de avaliação aqui...',
-                        style: TextStyle(color: Colors.amber),
+                  if (widget.context == MovieDetailsContext.watched &&
+                      currentUserId != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sua Avaliação',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          RatingBar.builder(
+                            // 1. Valor Inicial: Mostra a nota que o usuário já deu (ou 0 se for a primeira vez)
+                            initialRating:
+                                widget.movie.getRatingForUser(currentUserId!) ??
+                                0,
+                            minRating: 0.5, // Permite dar meia estrela
+                            direction: Axis.horizontal,
+                            allowHalfRating: true,
+                            itemCount: 5,
+                            itemPadding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
+                            itemBuilder: (context, _) =>
+                                const Icon(Icons.star, color: Colors.amber),
+                            // 2. Ação de Atualização: Chamado sempre que o usuário toca em uma estrela
+                            onRatingUpdate: (rating) {
+                              // Chama a função do FirestoreService para salvar a nova nota
+                              _firestoreService.updateMovieRating(
+                                widget.movie,
+                                currentUserId!,
+                                rating,
+                                widget.queueId,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
 

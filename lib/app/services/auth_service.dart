@@ -5,6 +5,8 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
+  String? get currentUserId => _auth.currentUser?.uid;
+
   // Stream que informa em tempo real se o usuário está logado ou não
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 

@@ -38,6 +38,49 @@ class FirestoreService {
   }
 
   // --- Funções de manipulação de filmes (agora operam na fila) ---
+  Future<void> updateMovieRating(
+    Movie movieToUpdate,
+    String userId,
+    double newRating,
+    String queueId,
+  ) async {
+    final docRef = _db.collection('queues').doc(queueId);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final List<dynamic> watchedListRaw = (doc.data()!)['watched_movies'] ?? [];
+    List<Movie> watchedList = watchedListRaw
+        .map((data) => Movie.fromMap(data))
+        .toList();
+
+    final int movieIndex = watchedList.indexWhere(
+      (m) => m.id == movieToUpdate.id,
+    );
+
+    if (movieIndex != -1) {
+      final Movie oldMovie = watchedList[movieIndex];
+
+          final Map<String, double> updatedRatings = Map.from(
+        oldMovie.ratings ?? {},
+      );
+
+      // 4. Atualiza a nota para o usuário específico.
+      updatedRatings[userId] = newRating;
+
+      // 5. Cria uma nova instância do filme com o mapa de notas atualizado.
+      final Movie updatedMovie = oldMovie.copyWith(ratings: updatedRatings);
+
+      // 6. Substitui o filme antigo pelo novo na lista.
+      watchedList[movieIndex] = updatedMovie;
+
+      // 7. Salva a lista inteira de volta no Firestore.
+      final List<Map<String, dynamic>> finalMovieMaps = watchedList
+          .map((m) => m.toMap())
+          .toList();
+      await docRef.update({'watched_movies': finalMovieMaps});
+    }
+  }
 
   Future<void> addMovieToUpcoming(Movie movie, String queueId) async {
     final docRef = _db.collection('queues').doc(queueId);

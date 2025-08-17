@@ -7,7 +7,7 @@ class Movie {
   final String posterPath;
   final String releaseDate;
   final DateTime? watchedAt;
-  final double? rating;
+  final Map<String, double>? ratings;
 
   Movie({
     required this.id,
@@ -16,8 +16,14 @@ class Movie {
     required this.posterPath,
     required this.releaseDate,
     this.watchedAt,
-    this.rating,
+    this.ratings = const {},
   });
+  double? getRatingForUser(String userId) {
+    if (ratings == null) {
+      return null;
+    }
+    return ratings![userId];
+  }
 
   String get fullPosterUrl {
     if (posterPath.isNotEmpty) {
@@ -36,7 +42,7 @@ class Movie {
       'posterPath': posterPath,
       'releaseDate': releaseDate,
       'watchedAt': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
-      'rating': rating,
+      'ratings': ratings,
     };
   }
 
@@ -48,7 +54,7 @@ class Movie {
       posterPath: map['posterPath'] ?? '',
       releaseDate: map['releaseDate'] ?? '',
       watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
-      rating: (map['rating'] as num?)?.toDouble(),
+      ratings: Map<String, double>.from(map['ratings'] ?? {}),
     );
   }
 
@@ -67,7 +73,7 @@ class Movie {
       releaseDate: json['release_date'] ?? '',
       // Esses campos não vêm da API, então são inicializados como nulos
       watchedAt: null,
-      rating: null,
+      ratings: null,
     );
   }
 
@@ -78,7 +84,7 @@ class Movie {
     String? posterPath,
     String? releaseDate,
     DateTime? watchedAt,
-    double? rating,
+    Map<String, double>? ratings,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -87,7 +93,7 @@ class Movie {
       posterPath: posterPath ?? this.posterPath,
       releaseDate: releaseDate ?? this.releaseDate,
       watchedAt: watchedAt ?? this.watchedAt,
-      rating: rating ?? this.rating,
+      ratings: ratings ?? this.ratings,
     );
   }
 }
