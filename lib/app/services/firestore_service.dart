@@ -22,20 +22,44 @@ class FirestoreService {
   }
 
   Future<void> createInitialDataForUser(User user, String displayName) async {
+    print(
+      '[FirestoreService] Iniciando a criação de dados iniciais para ${user.uid}',
+    );
+
+    // Cria um "batch" - um pacote de operações de escrita
+    final batch = _db.batch();
+
+    // Define a referência para a nova fila (sem criar ainda)
     final newQueueRef = _db.collection('queues').doc();
-    await newQueueRef.set({
+    batch.set(newQueueRef, {
       'ownerId': user.uid,
       'members': [user.uid],
       'upcoming_movies': [],
       'watched_movies': [],
     });
+    print('[FirestoreService] Operação de criar FILA adicionada ao batch.');
 
-    // 2. Cria o documento do usuário e aponta para a fila criada
-    await _db.collection('users').doc(user.uid).set({
+    // Define a referência para o novo usuário (sem criar ainda)
+    final userDocRef = _db.collection('users').doc(user.uid);
+    batch.set(userDocRef, {
       'displayName': displayName,
       'email': user.email,
       'activeQueueId': newQueueRef.id,
     });
+    print('[FirestoreService] Operação de criar USUÁRIO adicionada ao batch.');
+
+    try {
+      // Commita o batch: envia todas as operações para o Firebase de uma vez só
+      print('[FirestoreService] Executando o batch...');
+      await batch.commit();
+      print(
+        '[FirestoreService] Batch executado com sucesso! Usuário e Fila criados.',
+      );
+    } catch (e) {
+      print('[FirestoreService] ERRO CRÍTICO ao executar o batch:');
+      print(e.toString());
+      throw e;
+    }
   }
 
   // --- Funções de manipulação de filmes (agora operam na fila) ---

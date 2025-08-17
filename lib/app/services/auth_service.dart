@@ -29,12 +29,15 @@ class AuthService {
   }
 
   // Função de Cadastro
+  // ... dentro da classe AuthService
+
   Future<User?> createUserWithEmailAndPassword({
     required String displayName,
     required String email,
     required String password,
   }) async {
     try {
+      print('[AuthService] Tentando criar usuário no Firebase Auth...');
       // 1. Cria o usuário no Firebase Auth
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -43,13 +46,22 @@ class AuthService {
       final user = userCredential.user;
 
       if (user != null) {
+        print('[AuthService] Usuário criado no Auth com sucesso: ${user.uid}');
+        print('[AuthService] Tentando criar documento no Firestore...');
+
         // 2. Cria os dados iniciais no Firestore (usuário e primeira fila)
         await _firestoreService.createInitialDataForUser(user, displayName);
+
+        print('[AuthService] Documento no Firestore criado com sucesso!');
+      } else {
+        print('[AuthService] ERRO: userCredential.user é nulo após a criação.');
       }
 
       return user;
-    } on FirebaseAuthException catch (e) {
-      print("Erro no cadastro: ${e.message}");
+    } catch (e) {
+      // <<< MUDANÇA PRINCIPAL: Captura QUALQUER erro (e não só FirebaseAuthException)
+      print('[AuthService] ERRO GERAL NO PROCESSO DE CADASTRO:');
+      print(e.toString()); // Imprime o erro exato que está acontecendo
       return null;
     }
   }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/auth_service.dart';
-import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart'; // Importe o loader
+import 'package:movie_queue/features/auth/screens/queue_loader_screen.dart';
 import 'package:movie_queue/features/movies/screens/movie_list_screen.dart';
-import 'package:movie_queue/features/social/screens/social_screen.dart'; // Importe para ter o enum
+import 'package:movie_queue/features/social/screens/social_screen.dart';
+import 'package:movie_queue/features/auth/widgets/auth_gate.dart';
 
 class AppDrawer extends StatelessWidget {
   final String queueId;
@@ -65,8 +66,17 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.logout),
             title: const Text('Sair'),
             onTap: () async {
-              await AuthService().signOut();
-              // O AuthGate cuidará de levar para a tela de login
+              final navigator = Navigator.of(context);
+              final authService = AuthService();
+
+              // Primeiro, desloga o usuário
+              await authService.signOut();
+
+              // Depois, navega para o AuthGate e remove TODAS as telas anteriores
+              navigator.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AuthGate()),
+                (Route<dynamic> route) => false,
+              );
             },
           ),
           const SizedBox(height: 16),
