@@ -107,19 +107,62 @@ class FirestoreService {
     }
   }
 
-  Future<void> addMovieToUpcoming(Movie movie, String queueId) async {
+  Future<String> addMovieToUpcoming(Movie movie, String queueId) async {
     final docRef = _db.collection('queues').doc(queueId);
+
+    // Precisamos ler o documento primeiro para fazer as checagens
+    final doc = await docRef.get();
+    if (!doc.exists) {
+      return "Erro: Fila não encontrada.";
+    }
+
+    final data = doc.data()! as Map<String, dynamic>;
+    final List<dynamic> upcomingRaw = data['upcoming_movies'] ?? [];
+    final List<dynamic> watchedRaw = data['watched_movies'] ?? [];
+
+    // 1. Checa se o filme já está na lista de "próximos"
+    if (upcomingRaw.any((m) => m['id'] == movie.id)) {
+      return "Este filme já está na sua fila.";
+    }
+
+    // 2. Checa se o filme já está na lista de "assistidos"
+    if (watchedRaw.any((m) => m['id'] == movie.id)) {
+      return "Você já assistiu a este filme.";
+    }
+
+    // 3. Se passou nas checagens, adiciona o filme.
     await docRef.update({
       'upcoming_movies': FieldValue.arrayUnion([movie.toMap()]),
     });
+    return "Filme adicionado à fila!";
   }
 
   Future<void> moveUpcomingToWatched(Movie movie, String queueId) async {
     final docRef = _db.collection('queues').doc(queueId);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data()! as Map<String, dynamic>;
+
+    // 1. Pega a lista de "próximos" e remove o filme pelo ID
+    final List<dynamic> upcomingRaw = data['upcoming_movies'] ?? [];
+    List<Map<String, dynamic>> updatedUpcomingList = List.from(upcomingRaw);
+    updatedUpcomingList.removeWhere((m) => m['id'] == movie.id);
+
+    // 2. Pega a lista de "assistidos" e adiciona a nova versão do filme com a data
+    final List<dynamic> watchedRaw = data['watched_movies'] ?? [];
+    List<Map<String, dynamic>> updatedWatchedList = List.from(watchedRaw);
     final watchedMovie = movie.copyWith(watchedAt: DateTime.now());
+    // Evita adicionar duplicado caso haja algum clique duplo rápido
+    if (!updatedWatchedList.any((m) => m['id'] == watchedMovie.id)) {
+      updatedWatchedList.add(watchedMovie.toMap());
+    }
+
+    // 3. Salva as duas listas atualizadas de volta no Firestore
     await docRef.update({
-      'upcoming_movies': FieldValue.arrayRemove([movie.toMap()]),
-      'watched_movies': FieldValue.arrayUnion([watchedMovie.toMap()]),
+      'upcoming_movies': updatedUpcomingList,
+      'watched_movies': updatedWatchedList,
     });
   }
 

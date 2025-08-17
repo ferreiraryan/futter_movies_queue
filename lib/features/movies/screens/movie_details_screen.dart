@@ -45,15 +45,29 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           color: Colors.white,
           onPressed: () async {
             setState(() => _isLoading = true);
-            await _firestoreService.addMovieToUpcoming(
+            // 1. Chama o serviço e guarda a mensagem de retorno
+            final resultMessage = await _firestoreService.addMovieToUpcoming(
               widget.movie,
               widget.queueId,
             );
             if (!mounted) return;
+
+            // 2. Define a cor do SnackBar baseado no sucesso da operação
+            final bool success = resultMessage == "Filme adicionado à fila!";
+
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${widget.movie.title} adicionado!')),
+              SnackBar(
+                content: Text(resultMessage),
+                backgroundColor: success ? Colors.green : Colors.orangeAccent,
+              ),
             );
-            Navigator.of(context).pop();
+
+            // 3. Só fecha a tela se o filme foi adicionado com sucesso
+            if (success) {
+              Navigator.of(context).pop();
+            } else {
+              setState(() => _isLoading = false);
+            }
           },
         );
       case MovieDetailsContext.upcoming:
