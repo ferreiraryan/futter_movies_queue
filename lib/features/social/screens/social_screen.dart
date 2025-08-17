@@ -7,6 +7,7 @@ import 'package:movie_queue/features/social/widgets/hall_of_fame_card.dart';
 import 'package:movie_queue/features/social/widgets/member_card.dart';
 import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
+import 'package:movie_queue/shared/widgets/stats_card.dart';
 
 class SocialScreen extends StatefulWidget {
   final String queueId;
@@ -200,6 +201,7 @@ class _SocialScreenState extends State<SocialScreen> {
                         movie: topRatedResult['movie'],
                         averageRating: topRatedResult['averageRating'],
                       ),
+                    StatsCard(movieCount: watchedMoviesRaw.length),
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text(
