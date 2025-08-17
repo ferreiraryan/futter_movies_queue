@@ -9,6 +9,13 @@ class Movie {
   final DateTime? watchedAt;
   final Map<String, double>? ratings;
 
+  // <<< NOVOS CAMPOS >>>
+  final int? runtime; // Duração em minutos
+  final List<String> genres; // Lista de nomes dos gêneros
+  final String? backdropPath; // Imagem de fundo
+  final double? tmdbRating; // Nota média do TMDB
+  final String? tagline; // Slogan do filme
+
   Movie({
     required this.id,
     required this.title,
@@ -16,14 +23,14 @@ class Movie {
     required this.posterPath,
     required this.releaseDate,
     this.watchedAt,
-    this.ratings = const {},
+    this.ratings,
+    // <<< NOVOS CAMPOS NO CONSTRUTOR >>>
+    this.runtime,
+    this.genres = const [], // Garante que a lista nunca seja nula
+    this.backdropPath,
+    this.tmdbRating,
+    this.tagline,
   });
-  double? getRatingForUser(String userId) {
-    if (ratings == null) {
-      return null;
-    }
-    return ratings![userId];
-  }
 
   String get fullPosterUrl {
     if (posterPath.isNotEmpty) {
@@ -32,8 +39,20 @@ class Movie {
     return 'https://via.placeholder.com/500x750.png?text=No+Image';
   }
 
-  // --- MÉTODOS PARA O FIRESTORE ---
+  // <<< NOVO GETTER PARA A IMAGEM DE FUNDO >>>
+  String get fullBackdropUrl {
+    if (backdropPath != null && backdropPath!.isNotEmpty) {
+      return 'https://image.tmdb.org/t/p/w780$backdropPath';
+    }
+    // Se não tiver imagem de fundo, usa o pôster como fallback
+    return fullPosterUrl;
+  }
 
+  double? getRatingForUser(String userId) {
+    return ratings?[userId];
+  }
+
+  // <<< toMap ATUALIZADO >>>
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -43,9 +62,15 @@ class Movie {
       'releaseDate': releaseDate,
       'watchedAt': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
       'ratings': ratings,
+      'runtime': runtime,
+      'genres': genres,
+      'backdropPath': backdropPath,
+      'tmdbRating': tmdbRating,
+      'tagline': tagline,
     };
   }
 
+  // <<< fromMap ATUALIZADO >>>
   factory Movie.fromMap(Map<String, dynamic> map) {
     return Movie(
       id: map['id'] ?? 0,
@@ -54,29 +79,30 @@ class Movie {
       posterPath: map['posterPath'] ?? '',
       releaseDate: map['releaseDate'] ?? '',
       watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
-      ratings: Map<String, double>.from(map['ratings'] ?? {}),
+      ratings: map['ratings'] != null
+          ? Map<String, double>.from(map['ratings'])
+          : null,
+      // Usamos '??' para garantir que o app não quebre ao ler dados antigos do Firestore
+      runtime: map['runtime'],
+      genres: List<String>.from(map['genres'] ?? []),
+      backdropPath: map['backdropPath'],
+      tmdbRating: (map['tmdbRating'] as num?)?.toDouble(),
+      tagline: map['tagline'],
     );
   }
 
-  // --- MÉTODO PARA A API DO TMDB ---
-
-  // <<< NOVO MÉTODO >>>
-  // Cria um objeto Movie a partir de um JSON vindo da API do TMDB
+  // <<< fromJson (da busca) continua igual, pois a busca não traz esses dados >>>
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
       id: json['id'] ?? 0,
       title: json['title'] ?? 'Título não encontrado',
       overview: json['overview'] ?? '',
-      // A API usa 'poster_path' com underline
       posterPath: json['poster_path'] ?? '',
-      // A API usa 'release_date' com underline
       releaseDate: json['release_date'] ?? '',
-      // Esses campos não vêm da API, então são inicializados como nulos
-      watchedAt: null,
-      ratings: null,
     );
   }
 
+  // <<< copyWith ATUALIZADO >>>
   Movie copyWith({
     int? id,
     String? title,
@@ -85,6 +111,11 @@ class Movie {
     String? releaseDate,
     DateTime? watchedAt,
     Map<String, double>? ratings,
+    int? runtime,
+    List<String>? genres,
+    String? backdropPath,
+    double? tmdbRating,
+    String? tagline,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -94,6 +125,11 @@ class Movie {
       releaseDate: releaseDate ?? this.releaseDate,
       watchedAt: watchedAt ?? this.watchedAt,
       ratings: ratings ?? this.ratings,
+      runtime: runtime ?? this.runtime,
+      genres: genres ?? this.genres,
+      backdropPath: backdropPath ?? this.backdropPath,
+      tmdbRating: tmdbRating ?? this.tmdbRating,
+      tagline: tagline ?? this.tagline,
     );
   }
 }
