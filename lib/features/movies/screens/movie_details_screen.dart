@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/auth_service.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/app/services/tmdb_service.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
@@ -25,6 +26,7 @@ class MovieDetailsScreen extends StatefulWidget {
 
 class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final TmdbService _tmdbService = TmdbService();
   bool _isLoading = false;
   final currentUserId = AuthService().currentUserId;
 
@@ -43,30 +45,50 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         return _buildButton(
           text: 'Adicionar à Fila',
           color: Colors.white,
+          // <<< 3. LÓGICA TOTALMENTE NOVA AQUI >>>
           onPressed: () async {
             setState(() => _isLoading = true);
-            // 1. Chama o serviço e guarda a mensagem de retorno
-            final resultMessage = await _firestoreService.addMovieToUpcoming(
-              widget.movie,
-              widget.queueId,
-            );
-            if (!mounted) return;
 
-            // 2. Define a cor do SnackBar baseado no sucesso da operação
-            final bool success = resultMessage == "Filme adicionado à fila!";
+            try {
+              // PASSO 1: Busca os detalhes ricos do filme na API do TMDB
+              print('Buscando detalhes para o filme ID: ${widget.movie.id}');
+              final enrichedMovie = await _tmdbService.getMovieDetails(
+                widget.movie.id,
+              );
+              print('Detalhes encontrados para: ${enrichedMovie.title}');
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(resultMessage),
-                backgroundColor: success ? Colors.green : Colors.orangeAccent,
-              ),
-            );
+              // PASSO 2: Adiciona o filme ENRIQUECIDO ao Firestore
+              final resultMessage = await _firestoreService.addMovieToUpcoming(
+                enrichedMovie,
+                widget.queueId,
+              );
 
-            // 3. Só fecha a tela se o filme foi adicionado com sucesso
-            if (success) {
-              Navigator.of(context).pop();
-            } else {
+              if (!mounted) return;
+
+              final bool success = resultMessage == "Filme adicionado à fila!";
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(resultMessage),
+                  backgroundColor: success ? Colors.green : Colors.orangeAccent,
+                ),
+              );
+
+              if (success) {
+                Navigator.of(context).pop();
+              } else {
+                setState(() => _isLoading = false);
+              }
+            } catch (e) {
+              // Se a busca de detalhes falhar, mostra um erro
+              if (!mounted) return;
               setState(() => _isLoading = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erro ao buscar detalhes: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           },
         );
@@ -146,17 +168,17 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           children: [
             // Pôster do filme
             Image.network(
-              widget.movie.fullPosterUrl,
+              // Usamos a nova imagem de fundo se ela existir!
+              widget.movie.fullBackdropUrl,
               width: double.infinity,
-              height: 400,
+              height: 250,
               fit: BoxFit.cover,
               errorBuilder: (c, e, s) => Container(
-                height: 400,
+                height: 250,
                 color: Colors.grey[800],
                 child: const Center(child: Icon(Icons.movie, size: 100)),
               ),
             ),
-
             // Seção de detalhes
             Padding(
               padding: const EdgeInsets.all(16.0),

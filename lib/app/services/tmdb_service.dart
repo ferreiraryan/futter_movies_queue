@@ -43,11 +43,6 @@ class TmdbService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // O endpoint de detalhes nos dá todos os campos que precisamos.
-        // Vamos extraí-los e construir nosso objeto Movie completo.
-
-        // A API retorna gêneros como uma lista de mapas [{'id': 1, 'name': 'Ação'}].
-        // Nós extraímos apenas os nomes para a nossa List<String>.
         final List<String> genres = (data['genres'] as List)
             .map((genre) => genre['name'] as String)
             .toList();
