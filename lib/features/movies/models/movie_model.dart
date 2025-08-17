@@ -18,16 +18,26 @@ class Movie {
     this.watchedAt,
     this.rating,
   });
-  factory Movie.fromJson(Map<String, dynamic> json) {
-    return Movie(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      overview: json['overview'] ?? '',
-      posterPath: json['poster_path'] ?? '',
-      releaseDate: json['release_date'] ?? '',
-      // watchedAt e rating serão nulos por padrão, pois esses dados não vêm da API.
-      // Eles são adicionados depois, pela interação do usuário.
-    );
+
+  String get fullPosterUrl {
+    if (posterPath.isNotEmpty) {
+      return 'https://image.tmdb.org/t/p/w500$posterPath';
+    }
+    return 'https://via.placeholder.com/500x750.png?text=No+Image';
+  }
+
+  // --- MÉTODOS PARA O FIRESTORE ---
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'overview': overview,
+      'posterPath': posterPath,
+      'releaseDate': releaseDate,
+      'watchedAt': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
+      'rating': rating,
+    };
   }
 
   factory Movie.fromMap(Map<String, dynamic> map) {
@@ -35,21 +45,30 @@ class Movie {
       id: map['id'] ?? 0,
       title: map['title'] ?? '',
       overview: map['overview'] ?? '',
-      posterPath: map['poster_path'] ?? '',
-      releaseDate: map['release_date'] ?? '',
-      watchedAt: map['watched_at'] != null
-          ? (map['watched_at'] as Timestamp).toDate()
-          : null,
-
+      posterPath: map['posterPath'] ?? '',
+      releaseDate: map['releaseDate'] ?? '',
+      watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
       rating: (map['rating'] as num?)?.toDouble(),
     );
   }
 
-  String get fullPosterUrl {
-    if (posterPath.isNotEmpty) {
-      return 'https://image.tmdb.org/t/p/w500$posterPath';
-    }
-    return 'https://via.placeholder.com/500x750.png?text=No+Image';
+  // --- MÉTODO PARA A API DO TMDB ---
+
+  // <<< NOVO MÉTODO >>>
+  // Cria um objeto Movie a partir de um JSON vindo da API do TMDB
+  factory Movie.fromJson(Map<String, dynamic> json) {
+    return Movie(
+      id: json['id'] ?? 0,
+      title: json['title'] ?? 'Título não encontrado',
+      overview: json['overview'] ?? '',
+      // A API usa 'poster_path' com underline
+      posterPath: json['poster_path'] ?? '',
+      // A API usa 'release_date' com underline
+      releaseDate: json['release_date'] ?? '',
+      // Esses campos não vêm da API, então são inicializados como nulos
+      watchedAt: null,
+      rating: null,
+    );
   }
 
   Movie copyWith({
@@ -70,17 +89,5 @@ class Movie {
       watchedAt: watchedAt ?? this.watchedAt,
       rating: rating ?? this.rating,
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'overview': overview,
-      'poster_path': posterPath,
-      'release_date': releaseDate,
-      'watched_at': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
-      'rating': rating,
-    };
   }
 }

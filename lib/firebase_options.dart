@@ -83,4 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'movie-queue-c2e96.firebaseapp.com',
     storageBucket: 'movie-queue-c2e96.firebasestorage.app',
   );
+
 }
