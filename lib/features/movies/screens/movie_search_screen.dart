@@ -1,114 +1,99 @@
-import 'dart:async'; // Import necessário para usar o Timer
+// lib/features/movies/screens/movie_search_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:movie_queue/features/movies/widgets/movie_card.dart';
-import 'package:movie_queue/features/movies/widgets/search_list_card.dart';
-import 'package:movie_queue/shared/widgets/main_background.dart';
-
-import '../../../app/services/tmdb_service.dart';
-import '../../../shared/constants/app_colors.dart';
-import '../models/movie_model.dart';
+import 'package:movie_queue/app/services/tmdb_service.dart';
+import 'package:movie_queue/features/movies/models/movie_model.dart';
+import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
+import 'package:movie_queue/features/movies/widgets/searched_movie_card.dart';
 
 class MovieSearchScreen extends StatefulWidget {
-  const MovieSearchScreen({super.key});
+  final String queueId;
+
+  const MovieSearchScreen({super.key, required this.queueId});
+
   @override
   State<MovieSearchScreen> createState() => _MovieSearchScreenState();
 }
 
 class _MovieSearchScreenState extends State<MovieSearchScreen> {
   final TmdbService _tmdbService = TmdbService();
+  final TextEditingController _searchController = TextEditingController();
+
   List<Movie> _searchResults = [];
   bool _isLoading = false;
-  String _message = 'Digite o nome de um filme para buscar.';
 
-  Timer? _debounce;
-
-  @override
-  Widget build(BuildContext context) {
-    return MainBackground(
-      appBar: AppBar(
-        title: const Text('Buscar Filme'),
-        backgroundColor: AppColors.formBackground,
-      ),
-      header: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          onChanged: _onSearchChanged,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Ex: Matrix, Duna, Interestelar...',
-            suffixIcon: _isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(strokeWidth: 2.0),
-                  )
-                : const Icon(Icons.search),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-          ),
-        ),
-      ),
-      body: _searchResults.isEmpty
-          ? Center(child: Text(_message))
-          : ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _searchResults.length,
-              itemBuilder: (context, index) {
-                final movie = _searchResults[index];
-                return SearchListCard(movie: movie);
-              },
-            ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-
+  void _onSearchChanged(String query) async {
     if (query.isEmpty) {
       setState(() {
-        _isLoading = false;
         _searchResults = [];
-        _message = 'Digite o nome de um filme para buscar.';
       });
       return;
     }
 
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = true;
-        _message = '';
-      });
-
-      try {
-        final results = await _tmdbService.searchMovies(query);
-        if (!mounted) return;
-        setState(() {
-          _searchResults = results;
-          if (results.isEmpty) {
-            _message = 'Nenhum resultado encontrado para "$query".';
-          }
-        });
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _message = 'Erro ao buscar filmes. Tente novamente.';
-        });
-      } finally {
-        // ignore: control_flow_in_finally
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    setState(() {
+      _isLoading = true;
     });
+
+    final results = await _tmdbService.searchMovies(query);
+
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Buscar filme...',
+            border: InputBorder.none,
+          ),
+          onChanged: _onSearchChanged,
+        ),
+      ),
+      body: _buildSearchResults(),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_searchController.text.isNotEmpty && _searchResults.isEmpty) {
+      return const Center(child: Text('Nenhum filme encontrado.'));
+    }
+
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      padding: const EdgeInsets.only(
+        top: 10,
+        bottom: 10,
+      ), // Adiciona um respiro na lista
+      itemBuilder: (context, index) {
+        final movie = _searchResults[index];
+        return SearchedMovieCard(
+          movie: movie,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => MovieDetailsScreen(
+                  movie: movie,
+                  queueId: widget.queueId,
+                  context: MovieDetailsContext.search,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

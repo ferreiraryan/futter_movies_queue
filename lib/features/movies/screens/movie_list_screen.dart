@@ -1,25 +1,26 @@
-import 'dart:async'; // <<< MUDANÇA: Import necessário para o StreamSubscription
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/features/movies/models/movie_model.dart';
+import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
+import 'package:movie_queue/features/movies/screens/movie_search_screen.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
-import 'package:movie_queue/features/movies/widgets/watched_list_card.dart';
-import 'package:movie_queue/shared/widgets/main_background.dart';
-import '../../../app/services/firestore_service.dart';
-import '../../../shared/constants/app_colors.dart';
-import '../../../shared/widgets/app_drawer.dart';
-import '../models/movie_model.dart';
-import '../widgets/movie_list.dart';
-import 'movie_search_screen.dart';
+import 'package:movie_queue/features/movies/widgets/upcoming_movie_card.dart';
+import 'package:movie_queue/features/movies/widgets/watched_movie_card.dart';
+import 'package:movie_queue/shared/widgets/app_drawer.dart'; // Criaremos em breve
 
+// Enum para definir o tipo de lista a ser exibida
 enum ScreenType { upcoming, watched }
 
 class MovieListScreen extends StatefulWidget {
-  final ScreenType screenType;
   final String queueId;
+  final ScreenType screenType;
+
   const MovieListScreen({
     super.key,
-    required this.screenType,
     required this.queueId,
+    required this.screenType,
   });
 
   @override
@@ -28,8 +29,8 @@ class MovieListScreen extends StatefulWidget {
 
 class _MovieListScreenState extends State<MovieListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  late StreamSubscription<DocumentSnapshot> _movieSubscription;
 
-  late final StreamSubscription<DocumentSnapshot> _movieSubscription;
   List<Movie> _movies = [];
   bool _isLoading = true;
 
@@ -46,33 +47,24 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
     _movieSubscription = _firestoreService
         .getQueueStream(widget.queueId)
-        .listen(
-          (snapshot) {
-            if (!mounted) return;
+        .listen((snapshot) {
+          if (!mounted) return; // Garante que o widget ainda está na tela
 
-            List<Movie> newMovies = [];
-            if (snapshot.exists && snapshot.data() != null) {
-              final userData = snapshot.data() as Map<String, dynamic>;
-              final movieDataList = (userData[listKey] as List<dynamic>?) ?? [];
-              newMovies = movieDataList
-                  .map((data) => Movie.fromMap(data as Map<String, dynamic>))
-                  .toList();
-            }
+          List<Movie> newMovies = [];
+          if (snapshot.exists && snapshot.data() != null) {
+            final queueData = snapshot.data() as Map<String, dynamic>;
+            // Pega a lista de filmes (upcoming ou watched) do documento da fila
+            final movieDataList = (queueData[listKey] as List<dynamic>?) ?? [];
+            newMovies = movieDataList
+                .map((data) => Movie.fromMap(data))
+                .toList();
+          }
 
-            setState(() {
-              _movies = newMovies;
-              _isLoading = false;
-            });
-          },
-          onError: (error) {
-            if (!mounted) return;
-            setState(() {
-              _isLoading = false;
-              // Você pode adicionar uma variável de estado de erro aqui se quiser
-            });
-            // TODO: Lidar com o erro, talvez mostrando um SnackBar
-          },
-        );
+          setState(() {
+            _movies = newMovies;
+            _isLoading = false;
+          });
+        });
   }
 
   @override
@@ -83,124 +75,158 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isUpcoming = widget.screenType == ScreenType.upcoming;
-    final String title = isUpcoming ? 'Próximos Filmes' : 'Últimos Filmes';
+    final title = widget.screenType == ScreenType.upcoming
+        ? 'Próximos Filmes'
+        : 'Filmes Assistidos';
 
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      drawer: AppDrawer(queueId: widget.queueId),
+      body: _buildBody(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => MovieSearchScreen(queueId: widget.queueId),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
     if (_isLoading) {
-      return _buildLoadingScaffold(title);
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_movies.isEmpty) {
-      return _buildEmptyScaffold(title, isUpcoming);
+      return Center(
+        child: Text(
+          'Nenhum filme nesta lista ainda.',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+      );
     }
 
-    return MainBackground(
-      appBar: _buildAppBar(title),
-      drawer: const AppDrawer(),
-      floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
-      header: isUpcoming
-          ? FeaturedMovieCard(
-              movie: _movies.first,
-              queueId: widget.queueId,
-              onMarkedAsWatched: () {
-                _firestoreService.moveUpcomingToWatched(
-                  _movies.first,
-                  widget.queueId,
+    if (widget.screenType == ScreenType.watched) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _movies.length,
+        itemBuilder: (context, index) {
+          final movie = _movies[index];
+
+          // <<< MUDANÇA PRINCIPAL AQUI >>>
+          // Substituímos o ListTile pelo nosso novo card
+          return WatchedMovieCard(
+            movie: movie,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => MovieDetailsScreen(
+                    movie: movie,
+                    queueId: widget.queueId,
+                    context: MovieDetailsContext.watched,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
+
+    // Se a lista for de "próximos", usa o novo layout
+    final featuredMovie = _movies.first;
+    final upcomingList = _movies.length > 1 ? _movies.sublist(1) : [];
+
+    return CustomScrollView(
+      slivers: [
+        // 1. Card de Destaque
+        SliverToBoxAdapter(
+          child: FeaturedMovieCard(
+            movie: featuredMovie,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => MovieDetailsScreen(
+                    movie: featuredMovie,
+                    queueId: widget.queueId,
+                    context: MovieDetailsContext.upcoming,
+                  ),
+                ),
+              );
+            },
+            onMarkAsWatched: () {
+              _firestoreService.moveUpcomingToWatched(
+                featuredMovie,
+                widget.queueId,
+              );
+            },
+          ),
+        ),
+
+        // 2. Título da Próxima Fila
+        SliverToBoxAdapter(
+          child: upcomingList.isNotEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Text(
+                    'Próximos na Fila',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+
+        // 3. Lista Reordenável
+        SliverReorderableList(
+          // O itemCount é o total de filmes menos o que está em destaque.
+          itemCount: _movies.length - 1,
+          onReorder: _onReorder,
+          itemBuilder: (context, index) {
+            // Buscamos o filme na lista principal, mas pulando o primeiro.
+            // Ex: O item 0 da lista arrastável é o item 1 da _movies.
+            final movie = _movies[index + 1];
+
+            return UpcomingMovieCard(
+              // A Key é essencial e já estava correta.
+              key: ValueKey(movie.id),
+              movie: movie,
+              index: index,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => MovieDetailsScreen(
+                      movie: movie,
+                      queueId: widget.queueId,
+                      context: MovieDetailsContext.upcoming,
+                    ),
+                  ),
                 );
               },
-            )
-          : null,
-      body: isUpcoming ? _buildUpcomingBody() : _buildWatchedBody(),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  // --- MÉTODOS AUXILIARES ---
+  // ... dentro da classe _MovieListScreenState
 
-  Widget _buildUpcomingBody() {
-    final reorderableMovies = _movies.sublist(1);
-    return ReorderableMovieList(
-      queueId: widget.queueId,
-      key: const ValueKey('reorderable_list'),
-      reorderableMovies: reorderableMovies,
-      onReorder: (oldIndex, newIndex) {
-        setState(() {
-          if (newIndex > oldIndex) newIndex -= 1;
-          final movie = _movies.removeAt(oldIndex + 1);
-          _movies.insert(newIndex + 1, movie);
-        });
-        _firestoreService.updateUpcomingOrder(_movies, widget.queueId);
-      },
-    );
-  }
+  void _onReorder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
 
-  Widget _buildWatchedBody() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _movies.length,
-      itemBuilder: (context, index) {
-        final movie = _movies[index];
-        return WatchedListCard(
-          queueId: widget.queueId,
-          key: ValueKey(movie.id),
-          movie: movie,
-        );
-      },
-    );
-  }
-
-  AppBar _buildAppBar(String title) {
-    return AppBar(
-      title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
-      backgroundColor: AppColors.formBackground,
-      centerTitle: true,
-      elevation: 0,
-      iconTheme: const IconThemeData(color: AppColors.primaryColor),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: _navigateToAddMovie,
-      label: const Text(
-        'Adicionar Filme',
-        style: TextStyle(color: AppColors.buttonText),
-      ),
-      icon: const Icon(Icons.add, color: AppColors.buttonText),
-      backgroundColor: AppColors.primaryColor,
-    );
-  }
-
-  void _navigateToAddMovie() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const MovieSearchScreen()),
-    );
-  }
-
-  Widget _buildLoadingScaffold(String title) {
-    return Scaffold(
-      appBar: _buildAppBar(title),
-      drawer: const AppDrawer(),
-      body: const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  Widget _buildErrorScaffold() {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Erro")),
-      drawer: const AppDrawer(),
-      body: const Center(child: Text('Ocorreu um erro ao carregar os dados.')),
-    );
-  }
-
-  Widget _buildEmptyScaffold(String title, bool isUpcoming) {
-    return MainBackground(
-      appBar: _buildAppBar(title),
-      floatingActionButton: isUpcoming ? _buildFloatingActionButton() : null,
-      body: const Center(child: Text('Nenhum filme nesta lista.')),
-      drawer: const AppDrawer(),
-    );
+    setState(() {
+      final Movie item = _movies.removeAt(oldIndex + 1);
+      _movies.insert(newIndex + 1, item);
+    });
+    _firestoreService.updateUpcomingOrder(_movies, widget.queueId);
   }
 }

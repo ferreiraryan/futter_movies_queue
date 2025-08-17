@@ -1,148 +1,120 @@
 import 'package:flutter/material.dart';
-import '../../../app/services/firestore_service.dart';
-import '../../../shared/constants/app_colors.dart';
-import '../../../shared/widgets/custom_button.dart';
-import '../models/movie_model.dart';
+import 'package:movie_queue/app/services/auth_service.dart';
+import 'package:movie_queue/app/services/firestore_service.dart';
+import 'package:movie_queue/features/movies/models/movie_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+
+// Enum para definir o contexto/origem da tela de detalhes
+enum MovieDetailsContext { search, upcoming, watched }
 
 class MovieDetailsScreen extends StatefulWidget {
   final Movie movie;
-  final bool showAddButton;
-  final String? queueId;
-  final bool showRemoveButton;
-  final bool watched;
+  final String queueId;
+  final MovieDetailsContext context;
 
   const MovieDetailsScreen({
     super.key,
     required this.movie,
-    this.queueId,
-    this.showAddButton = true,
-    this.showRemoveButton = false,
-    required this.watched,
+    required this.queueId,
+    required this.context,
   });
 
   @override
-  MovieDetailsScreenState createState() => MovieDetailsScreenState();
+  State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
 }
 
-class MovieDetailsScreenState extends State<MovieDetailsScreen> {
+class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  bool _isLoading = false;
+  final currentUserId = AuthService().currentUserId;
 
-  void _showErrorSnackbar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
-    );
-  }
-
-  Widget? _buildBottomButton(BuildContext context) {
-    if (widget.showAddButton) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: CustomButton(
-          text: 'Adicionar à Fila',
-          onPressed: () async {
-            final queueId = widget.queueId;
-            if (queueId == null) {
-              _showErrorSnackbar(
-                "Erro: Fila não identificada para adicionar o filme.",
-              );
-              return;
-            }
-            Navigator.pop(context, false);
-            try {
-              await _firestoreService.addMovieToUpcoming(
-                widget.movie,
-                widget.queueId!,
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${widget.movie.title} adicionado!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.pop(context);
-            } catch (e) {
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.toString()),
-                  backgroundColor: Colors.orangeAccent,
-                ),
-              );
-            }
-          },
-        ),
+  // Função que constrói o botão de ação correto baseado no contexto
+  Widget? _buildActionButton() {
+    // Se estiver carregando, mostra um indicador de progresso
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
-    if (widget.showRemoveButton) {
-      if (widget.watched) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: CustomButton(
-            text: 'Remover dos Assistidos',
-            backgroundColor: Colors.redAccent,
-            onPressed: () async {
-              final queueId = widget.queueId;
-              if (queueId == null) {
-                _showErrorSnackbar(
-                  "Erro: Fila não identificada para remover o filme.",
-                );
-                return;
-              }
-              Navigator.pop(context);
-              await _firestoreService.removeMovieFromWatched(
-                widget.movie,
-                queueId,
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${widget.movie.title} removido dos assistidos.',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-          ),
-        );
-      } else {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: CustomButton(
-            text: 'Remover dos Proximos',
-            backgroundColor: Colors.redAccent,
-            onPressed: () async {
-              final queueId = widget.queueId;
 
-              if (queueId == null) {
-                _showErrorSnackbar(
-                  "Erro: Fila não identificada para remover o filme.",
-                );
-                return;
-              }
-              Navigator.pop(context);
-              await _firestoreService.removeMovieFromUpcoming(
-                widget.movie,
-                queueId,
-              );
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${widget.movie.title} removido dos assistidos.',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-          ),
+    switch (widget.context) {
+      case MovieDetailsContext.search:
+        return _buildButton(
+          text: 'Adicionar à Fila',
+          color: Colors.white,
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            await _firestoreService.addMovieToUpcoming(
+              widget.movie,
+              widget.queueId,
+            );
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${widget.movie.title} adicionado!')),
+            );
+            Navigator.of(context).pop();
+          },
         );
-      }
+      case MovieDetailsContext.upcoming:
+        return _buildButton(
+          text: 'Marcar como Assistido',
+          color: Colors.green,
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            await _firestoreService.moveUpcomingToWatched(
+              widget.movie,
+              widget.queueId,
+            );
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${widget.movie.title} marcado como assistido!'),
+              ),
+            );
+            Navigator.of(context).pop();
+          },
+        );
+      case MovieDetailsContext.watched:
+        return _buildButton(
+          text: 'Remover dos Assistidos',
+          color: Colors.redAccent,
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            await _firestoreService.removeMovieFromWatched(
+              widget.movie,
+              widget.queueId,
+            );
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${widget.movie.title} removido.')),
+            );
+            Navigator.of(context).pop();
+          },
+        );
     }
-    return null;
+  }
+
+  // Helper para criar os botões, evitando código repetido
+  Widget _buildButton({
+    required String text,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          onPressed: onPressed,
+          child: Text(text, style: const TextStyle(fontSize: 16)),
+        ),
+      ),
+    );
   }
 
   @override
@@ -150,25 +122,28 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.movie.title),
-        backgroundColor: AppColors.formBackground,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
+      extendBodyBehindAppBar: true, // Faz o corpo da tela ir por trás da AppBar
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Pôster do filme
             Image.network(
               widget.movie.fullPosterUrl,
               width: double.infinity,
-              height: 300,
+              height: 400,
               fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => const SizedBox(
-                height: 300,
-                child: Center(
-                  child: Icon(Icons.movie, size: 100, color: Colors.grey),
-                ),
+              errorBuilder: (c, e, s) => Container(
+                height: 400,
+                color: Colors.grey[800],
+                child: const Center(child: Icon(Icons.movie, size: 100)),
               ),
             ),
 
+            // Seção de detalhes
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -181,7 +156,6 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
                   Text(
                     'Lançamento: ${widget.movie.releaseDate}',
@@ -191,27 +165,51 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       color: Colors.grey,
                     ),
                   ),
-                  if (widget.watched && widget.queueId != null)
-                    RatingBar.builder(
-                      initialRating: widget.movie.rating != null
-                          ? widget.movie.rating!
-                          : 3,
-                      minRating: 1,
-                      direction: Axis.horizontal,
-                      allowHalfRating: true,
-                      itemCount: 5,
-                      itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                      itemBuilder: (context, _) =>
-                          Icon(Icons.star, color: Colors.amber),
-                      onRatingUpdate: (rating) {
-                        _firestoreService.updateMovieRating(
-                          widget.movie,
-                          rating,
-                          widget.queueId!,
-                        );
-                      },
+
+                  if (widget.context == MovieDetailsContext.watched &&
+                      currentUserId != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sua Avaliação',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          RatingBar.builder(
+                            initialRating:
+                                widget.movie.getRatingForUser(currentUserId!) ??
+                                0,
+                            minRating: 0.5, // Permite dar meia estrela
+                            direction: Axis.horizontal,
+                            allowHalfRating: true,
+                            itemCount: 5,
+                            itemPadding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
+                            ),
+                            itemBuilder: (context, _) =>
+                                const Icon(Icons.star, color: Colors.amber),
+                            // 2. Ação de Atualização: Chamado sempre que o usuário toca em uma estrela
+                            onRatingUpdate: (rating) {
+                              // Chama a função do FirestoreService para salvar a nova nota
+                              _firestoreService.updateMovieRating(
+                                widget.movie,
+                                currentUserId!,
+                                rating,
+                                widget.queueId,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 24),
                   const Text(
                     'Sinopse',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -229,7 +227,8 @@ class MovieDetailsScreenState extends State<MovieDetailsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomButton(context),
+      // A barra inferior que contém o botão de ação
+      bottomNavigationBar: _buildActionButton(),
     );
   }
 }

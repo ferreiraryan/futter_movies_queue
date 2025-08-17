@@ -1,87 +1,86 @@
 import 'package:flutter/material.dart';
-import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
-
-import '../../../shared/constants/app_colors.dart';
-import '../models/movie_model.dart';
+import 'package:movie_queue/features/movies/models/movie_model.dart';
 
 class FeaturedMovieCard extends StatelessWidget {
   final Movie movie;
-  final VoidCallback onMarkedAsWatched;
-  final String queueId;
+  final VoidCallback onMarkAsWatched;
+  final VoidCallback onTap;
 
   const FeaturedMovieCard({
     super.key,
     required this.movie,
-    required this.onMarkedAsWatched,
-    required this.queueId,
+    required this.onMarkAsWatched,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsGeometry.only(left: 40, right: 40),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 8,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MovieDetailsScreen(
-                  movie: movie,
-                  queueId: queueId,
-                  showAddButton: false,
-                  showRemoveButton: false,
-                  watched: false,
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            // Imagem de fundo
+            Image.network(
+              movie.fullPosterUrl,
+              height: 250,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                height: 250,
+                color: Colors.grey[800],
+                child: const Center(child: Icon(Icons.movie, size: 60)),
+              ),
+            ),
+            // Gradiente para garantir a legibilidade do texto
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black.withOpacity(0.9), Colors.transparent],
                 ),
               ),
-            );
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.network(
-                movie.fullPosterUrl,
-                fit: BoxFit.cover,
-                height: 300,
-                width: double.infinity,
-                errorBuilder: (c, e, s) => const SizedBox(
-                  height: 300,
-                  child: Center(child: Icon(Icons.movie, color: Colors.grey)),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+            ),
+            // Conteúdo (Título e Botão)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
                       movie.title,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Colors.white,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 10),
-                    TextButton.icon(
-                      onPressed: onMarkedAsWatched,
-                      icon: const Icon(
-                        Icons.check_circle_outline,
-                        color: AppColors.primaryColor,
-                      ),
-                      label: const Text(
-                        'Marcar como assistido',
-                        style: TextStyle(color: AppColors.primaryColor),
-                      ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: onMarkAsWatched,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Assistido'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
