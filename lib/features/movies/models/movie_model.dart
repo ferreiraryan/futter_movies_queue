@@ -85,8 +85,11 @@ class Movie {
       posterPath: map['posterPath'] ?? '',
       releaseDate: map['release_date'] ?? map['releaseDate'] ?? '',
       watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
+
       ratings: map['ratings'] != null
-          ? Map<String, double>.from(map['ratings'])
+          ? (map['ratings'] as Map<String, dynamic>).map(
+              (key, value) => MapEntry(key, (value as num).toDouble()),
+            )
           : null,
 
       reviews: map['reviews'] != null
