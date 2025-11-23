@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
-      // A navegação é tratada automaticamente pelo AuthGate
+      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Falha no login: ${e.toString()}")),

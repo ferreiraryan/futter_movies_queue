@@ -1,11 +1,11 @@
-// lib/features/social/widgets/pending_invite_card.dart
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
 
 class PendingInviteCard extends StatefulWidget {
-  // Recebemos o documento inteiro do convite
+  
   final QueryDocumentSnapshot invite;
 
   const PendingInviteCard({super.key, required this.invite});
@@ -20,7 +20,7 @@ class _PendingInviteCardState extends State<PendingInviteCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Extraímos os dados do documento para mostrar na tela
+    
     final data = widget.invite.data() as Map<String, dynamic>;
     final inviterName = data['inviterName'] ?? 'Alguém';
 
@@ -53,7 +53,7 @@ class _PendingInviteCardState extends State<PendingInviteCard> {
                     onPressed: () async {
                       setState(() => _isLoading = true);
                       await _firestoreService.declineInvite(widget.invite.id);
-                      // Não precisa mais do setState aqui, o StreamBuilder vai remover o card
+                      
                     },
                     child: const Text(
                       'Recusar',
@@ -65,8 +65,8 @@ class _PendingInviteCardState extends State<PendingInviteCard> {
                     onPressed: () async {
                       setState(() => _isLoading = true);
                       await _firestoreService.acceptInvite(widget.invite.id);
-                      // Não precisa fazer mais nada. A tela vai se reconstruir
-                      // automaticamente com os dados da nova fila!
+                      
+                      
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,

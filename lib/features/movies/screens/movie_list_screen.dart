@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math'; 
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
@@ -6,14 +8,16 @@ import 'package:movie_queue/features/movies/models/movie_model.dart';
 import 'package:movie_queue/features/movies/screens/movie_details_screen.dart';
 import 'package:movie_queue/features/movies/screens/movie_search_screen.dart';
 import 'package:movie_queue/features/movies/widgets/featured_movie_card.dart';
+import 'package:movie_queue/features/movies/widgets/movie_skeleton_loader.dart';
 import 'package:movie_queue/features/movies/widgets/upcoming_movie_card.dart';
 import 'package:movie_queue/features/movies/widgets/watched_movie_card.dart';
-import 'package:movie_queue/shared/widgets/app_drawer.dart'; // Criaremos em breve
+import 'package:movie_queue/features/social/screens/watched_interaction_screen.dart';
+import 'package:movie_queue/shared/widgets/app_drawer.dart';
 
-// Enum para definir o tipo de lista a ser exibida
 enum ScreenType { upcoming, watched }
 
 class MovieListScreen extends StatefulWidget {
+  
   final String queueId;
   final ScreenType screenType;
 
@@ -28,11 +32,14 @@ class MovieListScreen extends StatefulWidget {
 }
 
 class _MovieListScreenState extends State<MovieListScreen> {
+  
   final FirestoreService _firestoreService = FirestoreService();
   late StreamSubscription<DocumentSnapshot> _movieSubscription;
-
   List<Movie> _movies = [];
   bool _isLoading = true;
+  String? _selectedGenre;
+  String? _selectedDuration;
+  Set<String> _availableGenres = {};
 
   @override
   void initState() {
@@ -40,6 +47,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _listenToMovieChanges();
   }
 
+  
   void _listenToMovieChanges() {
     final String listKey = widget.screenType == ScreenType.upcoming
         ? 'upcoming_movies'
@@ -48,20 +56,26 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _movieSubscription = _firestoreService
         .getQueueStream(widget.queueId)
         .listen((snapshot) {
-          if (!mounted) return; // Garante que o widget ainda está na tela
+          if (!mounted) return;
 
           List<Movie> newMovies = [];
+          Set<String> genres = {};
+
           if (snapshot.exists && snapshot.data() != null) {
             final queueData = snapshot.data() as Map<String, dynamic>;
-            // Pega a lista de filmes (upcoming ou watched) do documento da fila
             final movieDataList = (queueData[listKey] as List<dynamic>?) ?? [];
             newMovies = movieDataList
                 .map((data) => Movie.fromMap(data))
                 .toList();
+
+            for (var movie in newMovies) {
+              genres.addAll(movie.genres);
+            }
           }
 
           setState(() {
             _movies = newMovies;
+            _availableGenres = genres;
             _isLoading = false;
           });
         });
@@ -73,6 +87,230 @@ class _MovieListScreenState extends State<MovieListScreen> {
     super.dispose();
   }
 
+  
+  void _onReorder(int oldIndex, int newIndex) {
+    if (_selectedGenre != null || _selectedDuration != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Limpe os filtros para reordenar.")),
+      );
+      return;
+    }
+
+    
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    setState(() {
+      
+      
+      final Movie item = _movies.removeAt(oldIndex);
+      _movies.insert(newIndex, item);
+    });
+
+    _firestoreService.updateUpcomingOrder(_movies, widget.queueId);
+  }
+
+  List<Movie> _getFilteredMovies() {
+    return _movies.where((movie) {
+      if (_selectedGenre != null && !movie.genres.contains(_selectedGenre)) {
+        return false;
+      }
+      if (_selectedDuration != null) {
+        final runtime = movie.runtime ?? 0;
+        if (_selectedDuration == 'Curto (< 90m)' && runtime >= 90) return false;
+        if (_selectedDuration == 'Médio (90m-2h30)' &&
+            (runtime < 90 || runtime > 150))
+          return false;
+        if (_selectedDuration == 'Longo (> 2h30)' && runtime <= 150)
+          return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  
+  void _pickRandomMovie() {
+    
+    final candidates = _getFilteredMovies();
+
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nenhum filme disponível para sortear!")),
+      );
+      return;
+    }
+
+    
+    final random = Random();
+    final winnerIndex = random.nextInt(candidates.length);
+    final winner = candidates[winnerIndex];
+
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "🍿 O escolhido foi...",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  winner.fullPosterUrl,
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                winner.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                winner.tagline ?? "Prepare a pipoca!",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _pickRandomMovie(); 
+              },
+              child: const Text("Girar de novo"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => MovieDetailsScreen(
+                      movie: winner,
+                      queueId: widget.queueId,
+                      context: MovieDetailsContext.upcoming,
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Ver Detalhes"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  
+  Widget _buildFilters() {
+    if (_movies.isEmpty) return const SizedBox.shrink();
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          if (_selectedGenre != null || _selectedDuration != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() {
+                  _selectedGenre = null;
+                  _selectedDuration = null;
+                }),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              label: Text(_selectedDuration ?? 'Duração'),
+              selected: _selectedDuration != null,
+              onSelected: (bool selected) {
+                _showDurationPicker();
+              },
+            ),
+          ),
+          ..._availableGenres.map((genre) {
+            final isSelected = _selectedGenre == genre;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: Text(genre),
+                selected: isSelected,
+                onSelected: (bool selected) {
+                  setState(() {
+                    _selectedGenre = selected ? genre : null;
+                  });
+                },
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _showDurationPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Qualquer Duração'),
+              onTap: () {
+                setState(() => _selectedDuration = null);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Curto (< 90m)'),
+              onTap: () {
+                setState(() => _selectedDuration = 'Curto (< 90m)');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Médio (90m-2h30)'),
+              onTap: () {
+                setState(() => _selectedDuration = 'Médio (90m-2h30)');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Longo (> 2h30)'),
+              onTap: () {
+                setState(() => _selectedDuration = 'Longo (> 2h30)');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.screenType == ScreenType.upcoming
@@ -80,9 +318,25 @@ class _MovieListScreenState extends State<MovieListScreen> {
         : 'Filmes Assistidos';
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        
+        actions: [
+          if (widget.screenType == ScreenType.upcoming && _movies.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.casino), 
+              tooltip: 'Escolher Aleatoriamente',
+              onPressed: _pickRandomMovie,
+            ),
+        ],
+      ),
       drawer: AppDrawer(queueId: widget.queueId),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          if (widget.screenType == ScreenType.upcoming) _buildFilters(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
@@ -96,9 +350,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
+  
+
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const MovieSkeletonLoader();
     }
 
     if (_movies.isEmpty) {
@@ -110,105 +366,193 @@ class _MovieListScreenState extends State<MovieListScreen> {
       );
     }
 
-    if (widget.screenType == ScreenType.watched) {
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _movies.length,
-        itemBuilder: (context, index) {
-          final movie = _movies[index];
+    
+    final filteredMovies = _getFilteredMovies();
+    bool hasFilters = _selectedGenre != null || _selectedDuration != null;
 
-          // <<< MUDANÇA PRINCIPAL AQUI >>>
-          // Substituímos o ListTile pelo nosso novo card
-          return WatchedMovieCard(
+    if (hasFilters || filteredMovies.isEmpty) {
+      if (filteredMovies.isEmpty)
+        return const Center(child: Text("Nenhum filme encontrado."));
+
+      return ListView.builder(
+        itemCount: filteredMovies.length,
+        itemBuilder: (context, index) {
+          final movie = filteredMovies[index];
+          return UpcomingMovieCard(
+            key: ValueKey(movie.id),
             movie: movie,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => MovieDetailsScreen(
-                    movie: movie,
-                    queueId: widget.queueId,
-                    context: MovieDetailsContext.watched,
-                  ),
-                ),
-              );
-            },
+            index: index,
+            onTap: () => _navigateToDetails(movie),
           );
         },
       );
     }
 
-    // Se a lista for de "próximos", usa o novo layout
-    final featuredMovie = _movies.first;
-    final upcomingList = _movies.length > 1 ? _movies.sublist(1) : [];
-
-    return CustomScrollView(
-      slivers: [
-        // 1. Card de Destaque
-        SliverToBoxAdapter(
-          child: FeaturedMovieCard(
-            movie: featuredMovie,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => MovieDetailsScreen(
-                    movie: featuredMovie,
-                    queueId: widget.queueId,
-                    context: MovieDetailsContext.upcoming,
-                  ),
+    if (widget.screenType == ScreenType.watched) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: filteredMovies.length,
+        itemBuilder: (context, index) {
+          final movie = filteredMovies[index];
+          return Dismissible(
+            key: Key(movie.id.toString()),
+            direction: DismissDirection.endToStart,
+            background: Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: Colors.redAccent,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [Icon(Icons.delete, color: Colors.white)],
                 ),
+              ),
+            ),
+            confirmDismiss: (direction) async {
+              return await showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Confirmar Exclusão"),
+                    content: Text(
+                      "Tem certeza que deseja remover '${movie.title}' da sua lista de assistidos?",
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text("Cancelar"),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                        ),
+                        onPressed: () {
+                          _firestoreService.removeMovieFromWatched(
+                            movie,
+                            widget.queueId,
+                          );
+                          Navigator.of(context).pop(true);
+                        },
+                        child: const Text("Remover"),
+                      ),
+                    ],
+                  );
+                },
               );
             },
-            onMarkAsWatched: () {
-              _firestoreService.moveUpcomingToWatched(
-                featuredMovie,
-                widget.queueId,
-              );
-            },
-          ),
-        ),
-
-        // 2. Título da Próxima Fila
-        SliverToBoxAdapter(
-          child: upcomingList.isNotEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Text(
-                    'Próximos na Fila',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-
-        // 3. Lista Reordenável
-        SliverReorderableList(
-          // O itemCount é o total de filmes menos o que está em destaque.
-          itemCount: _movies.length - 1,
-          onReorder: _onReorder,
-          itemBuilder: (context, index) {
-            // Buscamos o filme na lista principal, mas pulando o primeiro.
-            // Ex: O item 0 da lista arrastável é o item 1 da _movies.
-            final movie = _movies[index + 1];
-
-            return UpcomingMovieCard(
-              // A Key é essencial e já estava correta.
-              key: ValueKey(movie.id),
+            child: WatchedMovieCard(
               movie: movie,
-              index: index,
+              queueId: widget.queueId,
               onTap: () {
+                
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => MovieDetailsScreen(
+                    builder: (context) => WatchedInteractionScreen(
                       movie: movie,
                       queueId: widget.queueId,
-                      context: MovieDetailsContext.upcoming,
                     ),
                   ),
                 );
               },
+            ),
+          );
+        },
+      );
+    }
+
+    
+    return CustomScrollView(
+      slivers: [
+        SliverReorderableList(
+          itemCount: _movies.length,
+          onReorder: _onReorder,
+
+          
+          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (BuildContext context, Widget? child) {
+                final double animValue = Curves.easeInOut.transform(
+                  animation.value,
+                );
+                final double elevation = lerpDouble(0, 6, animValue)!;
+
+                
+                
+                
+                if (index == 0 || index == 1) {
+                  return Material(
+                    elevation: elevation,
+                    color: Colors.transparent,
+                    child: UpcomingMovieCard(
+                      movie: _movies[index],
+                      index: index,
+                      onTap: () {},
+                    ),
+                  );
+                }
+
+                return Material(
+                  elevation: elevation,
+                  color: Colors.transparent,
+                  child: child,
+                );
+              },
+              child: child,
+            );
+          },
+
+          itemBuilder: (context, index) {
+            final movie = _movies[index];
+
+            
+            if (index == 0) {
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(movie.id),
+                index: index,
+                child: FeaturedMovieCard(
+                  movie: movie,
+                  onTap: () => _navigateToDetails(movie),
+                  onMarkAsWatched: () {
+                    _firestoreService.moveUpcomingToWatched(
+                      movie,
+                      widget.queueId,
+                    );
+                  },
+                ),
+              );
+            }
+
+            
+            return Column(
+              key: ValueKey(movie.id),
+              children: [
+                if (index == 1 && _movies.length > 1)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16.0,
+                      24.0,
+                      16.0,
+                      8.0,
+                    ), 
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Próximos na Fila',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                UpcomingMovieCard(
+                  movie: movie,
+                  index: index,
+                  onTap: () => _navigateToDetails(movie),
+                ),
+              ],
             );
           },
         ),
@@ -216,17 +560,16 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
-  // ... dentro da classe _MovieListScreenState
-
-  void _onReorder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-
-    setState(() {
-      final Movie item = _movies.removeAt(oldIndex + 1);
-      _movies.insert(newIndex + 1, item);
-    });
-    _firestoreService.updateUpcomingOrder(_movies, widget.queueId);
+  
+  void _navigateToDetails(Movie movie) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => MovieDetailsScreen(
+          movie: movie,
+          queueId: widget.queueId,
+          context: MovieDetailsContext.upcoming,
+        ),
+      ),
+    );
   }
 }

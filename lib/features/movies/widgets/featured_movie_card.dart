@@ -25,19 +25,22 @@ class FeaturedMovieCard extends StatelessWidget {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            // Imagem de fundo
-            Image.network(
-              movie.fullPosterUrl,
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
+            
+            Hero(
+              tag: 'backdrop-${movie.id}',
+              child: Image.network(
+                
+                movie.fullBackdropUrl, 
                 height: 250,
-                color: Colors.grey[800],
-                child: const Center(child: Icon(Icons.movie, size: 60)),
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => Container(
+                  height: 250,
+                  color: Colors.grey[800],
+                  child: const Center(child: Icon(Icons.movie, size: 60)),
+                ),
               ),
             ),
-            // Gradiente para garantir a legibilidade do texto
             Container(
               height: 150,
               decoration: BoxDecoration(
@@ -48,7 +51,7 @@ class FeaturedMovieCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Conteúdo (Título e Botão)
+            
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(

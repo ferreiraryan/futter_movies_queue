@@ -25,9 +25,9 @@ class QueueLoaderScreen extends StatelessWidget {
           );
         }
 
-        // <<< MUDANÇA AQUI >>>
-        // Se o usuário está autenticado, mas não tem dados no Firestore,
-        // chamamos nosso novo widget de logout.
+        
+        
+        
         if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
           return const _SignOutAndRedirect();
         }
@@ -36,7 +36,7 @@ class QueueLoaderScreen extends StatelessWidget {
         final String? queueId = userData['activeQueueId'];
 
         if (queueId == null) {
-          // Se o documento existe mas não tem a queueId, também deslogamos.
+          
           return const _SignOutAndRedirect(
             reason: "Erro: Fila ativa não encontrada.",
           );
@@ -51,8 +51,8 @@ class QueueLoaderScreen extends StatelessWidget {
   }
 }
 
-/// Widget auxiliar que desloga o usuário e mostra uma mensagem.
-/// Ele é "privado" (começa com _) pois só será usado neste arquivo.
+
+
 class _SignOutAndRedirect extends StatefulWidget {
   final String reason;
   const _SignOutAndRedirect({
@@ -67,11 +67,11 @@ class _SignOutAndRedirectState extends State<_SignOutAndRedirect> {
   @override
   void initState() {
     super.initState();
-    // Agendamos o logout para ocorrer logo após a construção da tela,
-    // para evitar erros de "setState during build".
+    
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AuthService().signOut();
-      // Não precisamos navegar manualmente, o AuthGate fará isso por nós.
+      
     });
   }
 

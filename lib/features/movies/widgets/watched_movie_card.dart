@@ -1,49 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Import para formatação de data
+import 'package:intl/intl.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart'; 
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 
 class WatchedMovieCard extends StatelessWidget {
   final Movie movie;
   final VoidCallback onTap;
+  final String queueId;
 
-  const WatchedMovieCard({super.key, required this.movie, required this.onTap});
+  const WatchedMovieCard({
+    super.key,
+    required this.movie,
+    required this.onTap,
+    required this.queueId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Formata a data para o padrão dd/MM/yyyy
-    String formattedDate = 'Assistido em data desconhecida';
+    String formattedDate = 'Data desconhecida';
     if (movie.watchedAt != null) {
-      // Usamos o DateFormat do pacote intl
-      formattedDate =
-          'Assistido em ${DateFormat('dd/MM/yyyy').format(movie.watchedAt!)}';
+      formattedDate = DateFormat('dd/MM/yyyy').format(movie.watchedAt!);
+    }
+
+    
+    double averageRating = 0.0;
+    if (movie.ratings != null && movie.ratings!.isNotEmpty) {
+      double sum = movie.ratings!.values.reduce((a, b) => a + b);
+      averageRating = sum / movie.ratings!.length;
     }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12), 
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
-              // Imagem do Pôster
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  movie.fullPosterUrl,
-                  width: 70,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => Container(
+                child: Hero(
+                  tag: 'poster-watched-${movie.id}', 
+                  child: Image.network(
+                    movie.fullPosterUrl,
                     width: 70,
                     height: 100,
-                    color: Colors.grey[800],
-                    child: const Icon(Icons.movie),
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => Container(
+                      width: 70,
+                      height: 100,
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.movie),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
-              // Informações (Título e Data)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,14 +70,44 @@ class WatchedMovieCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+                    
+                    if (averageRating > 0)
+                      Row(
+                        children: [
+                          RatingBarIndicator(
+                            rating: averageRating,
+                            itemBuilder: (context, index) =>
+                                const Icon(Icons.star, color: Colors.amber),
+                            itemCount: 5,
+                            itemSize: 16.0,
+                            direction: Axis.horizontal,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            averageRating.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[400],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        'Sem avaliações',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
                     const SizedBox(height: 8),
                     Text(
-                      formattedDate, // <<< NOSSA DATA FORMATADA AQUI
-                      style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                      'Assistido em $formattedDate',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                     ),
                   ],
                 ),
               ),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),

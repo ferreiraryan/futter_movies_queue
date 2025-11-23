@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
       );
       if (mounted) {
-        Navigator.of(context).pop(); // Volta para a tela de login
+        Navigator.of(context).pop(); 
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
