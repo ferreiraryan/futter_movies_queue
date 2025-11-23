@@ -4,13 +4,13 @@ import 'package:movie_queue/features/movies/models/movie_model.dart';
 class UpcomingMovieCard extends StatelessWidget {
   final Movie movie;
   final VoidCallback onTap;
-  final int index; // <<< NOVO: Precisamos do índice para o listener
+  final int index; 
 
   const UpcomingMovieCard({
     super.key,
     required this.movie,
     required this.onTap,
-    required this.index, // <<< NOVO
+    required this.index, 
   });
 
   @override
@@ -23,10 +23,10 @@ class UpcomingMovieCard extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: Row(
             children: [
-              // <<< MUDANÇA PRINCIPAL AQUI >>>
-              // Envolvemos o ícone com um listener que inicia o gesto de arrastar.
+              
+              
               ReorderableDragStartListener(
-                index: index, // Informa à lista qual item está sendo arrastado
+                index: index, 
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: Icon(Icons.drag_handle, color: Colors.grey),

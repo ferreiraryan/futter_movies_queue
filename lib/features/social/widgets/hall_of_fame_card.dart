@@ -1,4 +1,4 @@
-// lib/features/social/widgets/hall_of_fame_card.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
@@ -34,7 +34,7 @@ class HallOfFameCard extends StatelessWidget {
               child: const Center(child: Icon(Icons.movie, size: 60)),
             ),
           ),
-          // Gradiente para legibilidade
+          
           Container(
             height: 200,
             decoration: BoxDecoration(
@@ -46,7 +46,7 @@ class HallOfFameCard extends StatelessWidget {
               ),
             ),
           ),
-          // Conteúdo
+          
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(

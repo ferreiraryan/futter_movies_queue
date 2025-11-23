@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 class GoalCard extends StatelessWidget {
   final int watchedCount;
   final int goal;
-  final DateTime? endDate; // Data limite
+  final DateTime? endDate; 
   final VoidCallback? onEdit;
 
   const GoalCard({
@@ -22,28 +22,28 @@ class GoalCard extends StatelessWidget {
         : 0.0;
     final int percentage = (progress * 100).toInt();
 
-    // Verifica os estados da meta
+    
     final bool isCompleted = watchedCount >= goal;
     final bool isExpired =
         endDate != null && DateTime.now().isAfter(endDate!) && !isCompleted;
 
-    // Cores e Textos dinâmicos baseados no estado
+    
     List<Color> gradientColors;
     String statusText;
     IconData statusIcon;
 
     if (isCompleted) {
-      // Sucesso: Verde/Dourado
+      
       gradientColors = [Colors.green.shade800, Colors.green.shade600];
       statusText = 'Meta Conquistada! 🎉';
       statusIcon = Icons.emoji_events;
     } else if (isExpired) {
-      // Falha: Cinza/Vermelho
+      
       gradientColors = [Colors.grey.shade800, Colors.grey.shade700];
       statusText = 'O tempo acabou. Tente uma nova meta!';
       statusIcon = Icons.timer_off;
     } else {
-      // Em andamento: Roxo padrão
+      
       gradientColors = [Colors.deepPurple.shade900, Colors.deepPurple.shade700];
       statusText = 'Faltam ${goal - watchedCount} filmes';
       if (endDate != null) {
@@ -55,14 +55,14 @@ class GoalCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // decoration: BoxDecoration(
-      //   borderRadius: BorderRadius.circular(12),
-      //   gradient: LinearGradient(
-      //     colors: gradientColors,
-      //     begin: Alignment.topLeft,
-      //     end: Alignment.bottomRight,
-      //   ),
-      // ),
+      
+      
+      
+      
+      
+      
+      
+      
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -79,7 +79,7 @@ class GoalCard extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-                // Se completou ou expirou, mostra botão para definir NOVA meta
+                
                 if (isCompleted || isExpired)
                   ElevatedButton(
                     onPressed: onEdit,
@@ -95,7 +95,7 @@ class GoalCard extends StatelessWidget {
                     child: const Text('Nova Meta'),
                   )
                 else if (onEdit != null)
-                  // Se está em andamento, mostra botão de editar discreto
+                  
                   IconButton(
                     icon: Icon(Icons.edit, color: Colors.purpleAccent.shade100),
                     onPressed: onEdit,

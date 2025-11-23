@@ -1,9 +1,9 @@
-// lib/features/social/widgets/scoreboard_card.dart
+
 
 import 'package:flutter/material.dart';
 
 class ScoreboardCard extends StatelessWidget {
-  // Recebe um mapa com o NOME do usuário e a contagem
+  
   final Map<String, int> stats;
 
   const ScoreboardCard({super.key, required this.stats});

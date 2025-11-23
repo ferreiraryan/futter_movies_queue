@@ -13,7 +13,7 @@ import 'package:movie_queue/features/social/widgets/stats_card.dart';
 import 'package:movie_queue/shared/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 
-// O "Provider" / "Wrapper" que cria o ViewModel
+
 class SocialScreenProvider extends StatelessWidget {
   final String queueId;
   const SocialScreenProvider({super.key, required this.queueId});
@@ -27,7 +27,7 @@ class SocialScreenProvider extends StatelessWidget {
   }
 }
 
-// A tela que exibe os dados
+
 class SocialScreen extends StatelessWidget {
   const SocialScreen({super.key});
 
@@ -42,7 +42,7 @@ class SocialScreen extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: [
-                    // Stream de Convites
+                    
                     StreamBuilder<QuerySnapshot>(
                       stream: FirestoreService().getPendingInvitesForUser(),
                       builder: (context, inviteSnapshot) {
@@ -61,7 +61,7 @@ class SocialScreen extends StatelessWidget {
                       },
                     ),
 
-                    // Conteúdo Principal
+                    
                     Expanded(
                       child: (viewModel.memberIds.length <= 1)
                           ? _buildLonelyState(context)
@@ -81,7 +81,7 @@ class SocialScreen extends StatelessWidget {
     );
   }
 
-  // Helper para o conteúdo social principal
+  
   Widget _buildSocialContent(BuildContext context, SocialViewModel viewModel) {
     return ListView(
       children: [
@@ -138,7 +138,7 @@ class SocialScreen extends StatelessWidget {
     );
   }
 
-  // Helper para quando o usuário está sozinho
+  
   Widget _buildLonelyState(BuildContext context) {
     final viewModel = Provider.of<SocialViewModel>(context, listen: false);
     return Center(
@@ -172,7 +172,7 @@ class SocialScreen extends StatelessWidget {
     );
   }
 
-  // Dialog de Convite
+  
   void _showInviteDialog(BuildContext context, String queueId) {
     final emailController = TextEditingController();
     final firestoreService = FirestoreService();
@@ -205,7 +205,7 @@ class SocialScreen extends StatelessWidget {
     );
   }
 
-  // Dialog de Edição da Meta
+  
   void _showEditGoalDialog(
     BuildContext context,
     String queueId,

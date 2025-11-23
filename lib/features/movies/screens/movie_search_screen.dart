@@ -20,7 +20,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
 
   List<Movie> _searchResults = [];
   bool _isLoading = false;
-  String? _selectedYear; // Estado para guardar o ano do filtro
+  String? _selectedYear; 
 
   void _performSearch() async {
     final query = _searchController.text;
@@ -35,7 +35,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
       _isLoading = true;
     });
 
-    // Passamos o ano selecionado para o serviço
+    
     final results = await _tmdbService.searchMovies(query, year: _selectedYear);
 
     if (mounted) {
@@ -70,13 +70,13 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                // Limpa o filtro
+                
                 _yearController.clear();
                 setState(() {
                   _selectedYear = null;
                 });
                 Navigator.pop(context);
-                _performSearch(); // Refaz a busca sem filtro
+                _performSearch(); 
               },
               child: const Text('Limpar Filtros'),
             ),
@@ -88,7 +88,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
                       : null;
                 });
                 Navigator.pop(context);
-                _performSearch(); // Refaz a busca com o novo filtro
+                _performSearch(); 
               },
               child: const Text('Aplicar'),
             ),
@@ -112,7 +112,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
           onChanged: (val) => _performSearch(),
         ),
         actions: [
-          // Ícone de filtro que muda de cor se houver um filtro ativo
+          
           IconButton(
             icon: Icon(
               Icons.filter_list,
@@ -124,7 +124,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
       ),
       body: Column(
         children: [
-          // Mostra um "chip" visual se o filtro estiver ativo
+          
           if (_selectedYear != null)
             Padding(
               padding: const EdgeInsets.all(8.0),

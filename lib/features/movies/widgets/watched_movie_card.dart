@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart'; // Import necessário
+import 'package:flutter_rating_bar/flutter_rating_bar.dart'; 
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 
 class WatchedMovieCard extends StatelessWidget {
@@ -22,7 +22,7 @@ class WatchedMovieCard extends StatelessWidget {
       formattedDate = DateFormat('dd/MM/yyyy').format(movie.watchedAt!);
     }
 
-    // <<< CÁLCULO DA MÉDIA >>>
+    
     double averageRating = 0.0;
     if (movie.ratings != null && movie.ratings!.isNotEmpty) {
       double sum = movie.ratings!.values.reduce((a, b) => a + b);
@@ -33,7 +33,7 @@ class WatchedMovieCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12), // Boas práticas de UI
+        borderRadius: BorderRadius.circular(12), 
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
@@ -41,7 +41,7 @@ class WatchedMovieCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Hero(
-                  tag: 'poster-watched-${movie.id}', // Tag única para o Hero
+                  tag: 'poster-watched-${movie.id}', 
                   child: Image.network(
                     movie.fullPosterUrl,
                     width: 70,
@@ -71,7 +71,7 @@ class WatchedMovieCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // <<< EXIBIÇÃO DAS ESTRELAS (MÉDIA) >>>
+                    
                     if (averageRating > 0)
                       Row(
                         children: [

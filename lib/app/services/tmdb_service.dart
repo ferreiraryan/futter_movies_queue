@@ -3,21 +3,17 @@ import 'package:http/http.dart' as http;
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 
 class TmdbService {
-  final String _apiKey =
-      '9c8f21e1759485953bc9ab844b726a16'; // Mantenha sua chave!
+  final String _apiKey = '9c8f21e1759485953bc9ab844b726a16';
   final String _baseUrl = 'https://api.themoviedb.org/3';
 
-  /// Busca filmes por texto, com opção de filtrar por ano
   Future<List<Movie>> searchMovies(String query, {String? year}) async {
     if (query.isEmpty) {
       return [];
     }
 
-    // Monta a URL base
     String urlString =
         '$_baseUrl/search/movie?api_key=$_apiKey&query=$query&language=pt-BR';
 
-    // <<< NOVO: Adiciona o ano se ele foi passado >>>
     if (year != null && year.isNotEmpty) {
       urlString += '&primary_release_year=$year';
     }
@@ -40,7 +36,6 @@ class TmdbService {
     }
   }
 
-  // ... (Mantenha o método getMovieDetails igualzinho estava)
   Future<Movie> getMovieDetails(int movieId) async {
     final url = Uri.parse(
       '$_baseUrl/movie/$movieId?api_key=$_apiKey&language=pt-BR',

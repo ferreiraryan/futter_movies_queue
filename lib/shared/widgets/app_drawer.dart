@@ -18,7 +18,7 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           StreamBuilder<DocumentSnapshot>(
-            // <<< PASSO 2: USAR A CASA CONSTRUÍDA (A INSTÂNCIA) >>>
+            
             stream: firestoreService.getUserDocStream(),
             builder: (context, snapshot) {
               String name = 'Movie Queue';
@@ -47,7 +47,7 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.movie_filter_outlined),
             title: const Text('Próximos'),
             onTap: () {
-              // Navega para o loader, que levará para a tela de próximos
+              
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => const QueueLoaderScreen(
@@ -61,7 +61,7 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.history),
             title: const Text('Assistidos'),
             onTap: () {
-              // Navega para o loader, que levará para a tela de assistidos
+              
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => const QueueLoaderScreen(
@@ -75,7 +75,7 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.people_outline),
             title: const Text('Social'),
             onTap: () {
-              // Navega para a nova SocialScreen
+              
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => SocialScreenProvider(queueId: queueId),
@@ -84,7 +84,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
 
-          const Spacer(), // Empurra o botão de sair para o final
+          const Spacer(), 
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sair'),
@@ -92,10 +92,10 @@ class AppDrawer extends StatelessWidget {
               final navigator = Navigator.of(context);
               final authService = AuthService();
 
-              // Primeiro, desloga o usuário
+              
               await authService.signOut();
 
-              // Depois, navega para o AuthGate e remove TODAS as telas anteriores
+              
               navigator.pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const AuthGate()),
                 (Route<dynamic> route) => false,

@@ -1,4 +1,4 @@
-// lib/features/social/widgets/stats_card.dart
+
 
 import 'package:flutter/material.dart';
 
@@ -47,7 +47,7 @@ class StatsCard extends StatelessWidget {
     );
   }
 
-  // Widget auxiliar para criar cada item de estatística
+  
   Widget _buildStatItem({
     required String value,
     required String label,

@@ -16,13 +16,13 @@ class PersonalityInsightsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Se o crítico e o empolgado forem a mesma pessoa (ex: só 1 pessoa votou),
-    // mostramos apenas um "Dono da Opinião" ou ocultamos a comparação.
-    // Aqui, vou optar por mostrar ambos, pois é engraçado ver que a pessoa é o extremo de si mesma.
+    
+    
+    
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey[900], // Fundo um pouco mais escuro para destacar
+      color: Colors.grey[900], 
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -35,7 +35,7 @@ class PersonalityInsightsCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                // O Empolgado
+                
                 Expanded(
                   child: _buildPersonaColumn(
                     title: '🤩 O Empolgado',
@@ -44,9 +44,9 @@ class PersonalityInsightsCard extends StatelessWidget {
                     color: Colors.greenAccent,
                   ),
                 ),
-                // Divisor vertical
+                
                 Container(height: 60, width: 1, color: Colors.grey[700]),
-                // O Crítico
+                
                 Expanded(
                   child: _buildPersonaColumn(
                     title: '🧐 O Crítico',

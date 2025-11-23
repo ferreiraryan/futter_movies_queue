@@ -25,12 +25,12 @@ class FeaturedMovieCard extends StatelessWidget {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            // Imagem de fundo
+            
             Hero(
               tag: 'backdrop-${movie.id}',
               child: Image.network(
-                // <<< MUDANÇA AQUI >>>
-                movie.fullBackdropUrl, // ANTES: movie.fullPosterUrl
+                
+                movie.fullBackdropUrl, 
                 height: 250,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -51,7 +51,7 @@ class FeaturedMovieCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Conteúdo (Título e Botão)
+            
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(

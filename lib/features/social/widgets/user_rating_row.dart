@@ -8,8 +8,8 @@ import 'package:movie_queue/features/movies/models/movie_model.dart';
 class UserRatingRow extends StatefulWidget {
   final String userId;
   final double rating;
-  final Movie movie; // <<< NOVO: Precisa do filme para atualizar a nota
-  final String queueId; // <<< NOVO: E do ID da fila
+  final Movie movie; 
+  final String queueId; 
 
   const UserRatingRow({
     super.key,
@@ -28,7 +28,7 @@ class _UserRatingRowState extends State<UserRatingRow> {
 
   @override
   Widget build(BuildContext context) {
-    // Pega o ID do usuário atualmente logado
+    
     final currentUserId = AuthService().currentUserId;
     final bool isCurrentUser = widget.userId == currentUserId;
 
@@ -61,8 +61,8 @@ class _UserRatingRowState extends State<UserRatingRow> {
                   ),
                 ),
               ),
-              // <<< LÓGICA CONDICIONAL AQUI >>>
-              // Se for o usuário logado, mostra a barra interativa
+              
+              
               if (isCurrentUser)
                 RatingBar.builder(
                   initialRating: widget.rating,
@@ -82,7 +82,7 @@ class _UserRatingRowState extends State<UserRatingRow> {
                     );
                   },
                 )
-              // Se não for, mostra a barra estática
+              
               else
                 RatingBarIndicator(
                   rating: widget.rating,

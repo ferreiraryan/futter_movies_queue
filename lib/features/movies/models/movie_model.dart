@@ -7,10 +7,9 @@ class Movie {
   final String posterPath;
   final String releaseDate;
   final DateTime? watchedAt;
-  final Map<String, double>? ratings; // Mapa de Notas
+  final Map<String, double>? ratings;
 
-  // <<< 1. NOVO CAMPO: Mapa de Resenhas >>>
-  final Map<String, String>? reviews; // Ex: {'id_ryan': 'Filme muito bom!'}
+  final Map<String, String>? reviews;
 
   final int? runtime;
   final List<String> genres;
@@ -27,7 +26,7 @@ class Movie {
     required this.releaseDate,
     this.watchedAt,
     this.ratings,
-    // <<< 2. ADICIONAR NO CONSTRUTOR >>>
+
     this.reviews,
     this.runtime,
     this.genres = const [],
@@ -55,7 +54,6 @@ class Movie {
     return ratings?[userId];
   }
 
-  // <<< 3. NOVO HELPER: Pegar resenha do usuário >>>
   String? getReviewForUser(String userId) {
     return reviews?[userId];
   }
@@ -69,7 +67,7 @@ class Movie {
       'releaseDate': releaseDate,
       'watchedAt': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
       'ratings': ratings,
-      'reviews': reviews, // <<< 4. SALVAR NO MAPA >>>
+      'reviews': reviews,
       'runtime': runtime,
       'genres': genres,
       'backdropPath': backdropPath,
@@ -85,15 +83,12 @@ class Movie {
       title: map['title'] ?? '',
       overview: map['overview'] ?? '',
       posterPath: map['posterPath'] ?? '',
-      releaseDate:
-          map['release_date'] ??
-          map['releaseDate'] ??
-          '', // Fallback para nomes diferentes
+      releaseDate: map['release_date'] ?? map['releaseDate'] ?? '',
       watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
       ratings: map['ratings'] != null
           ? Map<String, double>.from(map['ratings'])
           : null,
-      // <<< 5. LER DO MAPA >>>
+
       reviews: map['reviews'] != null
           ? Map<String, String>.from(map['reviews'])
           : null,
@@ -116,7 +111,7 @@ class Movie {
       releaseDate: json['release_date'] ?? '',
       watchedAt: null,
       ratings: null,
-      reviews: null, // API não traz resenhas nossas
+      reviews: null,
     );
   }
 
@@ -128,7 +123,7 @@ class Movie {
     String? releaseDate,
     DateTime? watchedAt,
     Map<String, double>? ratings,
-    Map<String, String>? reviews, // <<< 6. COPYWITH >>>
+    Map<String, String>? reviews,
     int? runtime,
     List<String>? genres,
     String? backdropPath,

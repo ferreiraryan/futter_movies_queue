@@ -30,7 +30,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
     super.initState();
     final currentUserId = AuthService().currentUserId;
     if (currentUserId != null) {
-      // Preenche o campo se já houver uma resenha do usuário
+      
       _reviewController.text =
           widget.movie.getReviewForUser(currentUserId) ?? '';
     }
@@ -42,15 +42,15 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
     final ratingsMap = widget.movie.ratings ?? {};
     final reviewsMap = widget.movie.reviews ?? {};
 
-    // Lista de usuários que interagiram (nota ou resenha)
+    
     final Set<String> userIds = {...ratingsMap.keys, ...reviewsMap.keys};
     if (currentUserId != null)
-      userIds.add(currentUserId); // Garante que eu apareço
+      userIds.add(currentUserId); 
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // 1. Cabeçalho com Imagem (Hero)
+          
           SliverAppBar(
             expandedHeight: 250.0,
             floating: false,
@@ -68,7 +68,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
                 children: [
                   Hero(
                     tag:
-                        'backdrop-watched-${widget.movie.id}', // Tag diferente para não conflitar
+                        'backdrop-watched-${widget.movie.id}', 
                     child: Image.network(
                       widget.movie.fullBackdropUrl,
                       fit: BoxFit.cover,
@@ -93,7 +93,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
             ),
           ),
 
-          // 2. Área de "Minha Avaliação"
+          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -114,7 +114,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Estrelas
+                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -146,7 +146,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
                             ],
                           ),
                           const Divider(height: 32),
-                          // Resenha
+                          
                           TextField(
                             controller: _reviewController,
                             maxLines: 3,
@@ -175,7 +175,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
                                 );
                                 FocusScope.of(
                                   context,
-                                ).unfocus(); // Fecha teclado
+                                ).unfocus(); 
                               },
                               child: const Text('Salvar Resenha'),
                             ),
@@ -188,7 +188,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
             ),
           ),
 
-          // 3. Lista de Opiniões do Grupo
+          
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -205,7 +205,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final userId = userIds.elementAt(index);
-              // Não mostramos o card do usuário logado aqui, pois já está em destaque acima
+              
               if (userId == currentUserId) return const SizedBox.shrink();
 
               final rating = ratingsMap[userId] ?? 0.0;
@@ -287,7 +287,7 @@ class _WatchedInteractionScreenState extends State<WatchedInteractionScreen> {
             }, childCount: userIds.length),
           ),
 
-          // Espaço extra no final
+          
           const SliverToBoxAdapter(child: SizedBox(height: 50)),
         ],
       ),

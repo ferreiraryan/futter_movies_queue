@@ -5,7 +5,7 @@ import 'package:movie_queue/app/services/tmdb_service.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
-// Enum para definir o contexto/origem da tela de detalhes
+
 enum MovieDetailsContext { search, upcoming, watched }
 
 class MovieDetailsScreen extends StatefulWidget {
@@ -30,9 +30,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   bool _isLoading = false;
   final currentUserId = AuthService().currentUserId;
 
-  // Função que constrói o botão de ação correto baseado no contexto
+  
   Widget? _buildActionButton() {
-    // Se estiver carregando, mostra um indicador de progresso
+    
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.all(16.0),
@@ -45,19 +45,19 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         return _buildButton(
           text: 'Adicionar à Fila',
           color: Colors.white,
-          // <<< 3. LÓGICA TOTALMENTE NOVA AQUI >>>
+          
           onPressed: () async {
             setState(() => _isLoading = true);
 
             try {
-              // PASSO 1: Busca os detalhes ricos do filme na API do TMDB
+              
               print('Buscando detalhes para o filme ID: ${widget.movie.id}');
               final enrichedMovie = await _tmdbService.getMovieDetails(
                 widget.movie.id,
               );
               print('Detalhes encontrados para: ${enrichedMovie.title}');
 
-              // PASSO 2: Adiciona o filme ENRIQUECIDO ao Firestore
+              
               final resultMessage = await _firestoreService.addMovieToUpcoming(
                 enrichedMovie,
                 widget.queueId,
@@ -80,7 +80,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                 setState(() => _isLoading = false);
               }
             } catch (e) {
-              // Se a busca de detalhes falhar, mostra um erro
+              
               if (!mounted) return;
               setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +131,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     }
   }
 
-  // Helper para criar os botões, evitando código repetido
+  
   Widget _buildButton({
     required String text,
     required Color color,
@@ -153,19 +153,19 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
-  // ... imports e classe ...
+  
 
   @override
   Widget build(BuildContext context) {
     final currentUserId = AuthService().currentUserId;
 
     return Scaffold(
-      // AppBar transparente para ficar em cima da imagem
+      
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Um ícone de voltar com sombra para garantir leitura
+        
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -182,15 +182,15 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === CABEÇALHO COM HERO ===
+            
             SizedBox(
-              height: 300, // Altura da área do banner
+              height: 300, 
               child: Stack(
                 children: [
-                  // 1. IMAGEM DE FUNDO (BACKDROP)
+                  
                   Positioned.fill(
                     child: Hero(
-                      // Tag única para o backdrop
+                      
                       tag: 'backdrop-${widget.movie.id}',
                       child: Image.network(
                         widget.movie.fullBackdropUrl,
@@ -201,7 +201,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     ),
                   ),
 
-                  // Gradiente escuro na parte inferior para o texto aparecer
+                  
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -217,7 +217,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     ),
                   ),
 
-                  // 2. PÔSTER FLUTUANTE + TÍTULO
+                  
                   Positioned(
                     bottom: 20,
                     left: 20,
@@ -225,9 +225,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // O Pôster que "voa" da lista
+                        
                         Hero(
-                          // Tag única para o pôster
+                          
                           tag: 'poster-${widget.movie.id}',
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -240,7 +240,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        // Título e Info
+                        
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,13 +283,13 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
               ),
             ),
 
-            // === CORPO DO DETALHE ===
+            
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Barra de Avaliação (mantida igual)
+                  
                   if (widget.context == MovieDetailsContext.watched &&
                       currentUserId != null)
                     Padding(
@@ -332,7 +332,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ),
                     ),
 
-                  // Tagline (se existir)
+                  
                   if (widget.movie.tagline != null &&
                       widget.movie.tagline!.isNotEmpty)
                     Padding(

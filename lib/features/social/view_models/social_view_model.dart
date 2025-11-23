@@ -18,9 +18,9 @@ class SocialViewModel extends ChangeNotifier {
   int watchedMovieCount = 0;
   int totalMinutes = 0;
 
-  // <<< DADOS DA META >>>
+  
   int currentGoal = 50;
-  DateTime? goalEndDate; // Nova propriedade para a data
+  DateTime? goalEndDate; 
 
   String? enthusiastId;
   double enthusiastAvg = 0.0;
@@ -44,7 +44,7 @@ class SocialViewModel extends ChangeNotifier {
 
       final queueData = queueSnapshot.data() as Map<String, dynamic>;
 
-      // <<< LER META E DATA >>>
+      
       currentGoal = (queueData['goal'] as num?)?.toInt() ?? 50;
       final Timestamp? endDateTs = queueData['goalEndDate'];
       goalEndDate = endDateTs?.toDate();
@@ -75,7 +75,7 @@ class SocialViewModel extends ChangeNotifier {
     });
   }
 
-  // ... (restante dos métodos _calculatePersonalities, _calculateScoreboard, etc. permanecem iguais)
+  
   void _calculatePersonalities(List<dynamic> watchedMoviesRaw) {
     final userRatings = <String, List<double>>{};
     for (var movieData in watchedMoviesRaw) {

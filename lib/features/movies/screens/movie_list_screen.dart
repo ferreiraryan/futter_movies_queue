@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math'; // <<< IMPORT NECESSÁRIO PARA A ROLETA
+import 'dart:math'; 
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ import 'package:movie_queue/shared/widgets/app_drawer.dart';
 enum ScreenType { upcoming, watched }
 
 class MovieListScreen extends StatefulWidget {
-  // ... (construtor sem alterações)
+  
   final String queueId;
   final ScreenType screenType;
 
@@ -32,7 +32,7 @@ class MovieListScreen extends StatefulWidget {
 }
 
 class _MovieListScreenState extends State<MovieListScreen> {
-  // ... (variáveis de estado, initState, _listenToMovieChanges, dispose, _onReorder mantidos iguais)
+  
   final FirestoreService _firestoreService = FirestoreService();
   late StreamSubscription<DocumentSnapshot> _movieSubscription;
   List<Movie> _movies = [];
@@ -47,7 +47,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _listenToMovieChanges();
   }
 
-  // ... (_listenToMovieChanges e dispose iguais)
+  
   void _listenToMovieChanges() {
     final String listKey = widget.screenType == ScreenType.upcoming
         ? 'upcoming_movies'
@@ -87,7 +87,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     super.dispose();
   }
 
-  // ... (_onReorder e _getFilteredMovies iguais)
+  
   void _onReorder(int oldIndex, int newIndex) {
     if (_selectedGenre != null || _selectedDuration != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,14 +96,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
       return;
     }
 
-    // Lógica padrão do Flutter para reordenação
+    
     if (newIndex > oldIndex) {
       newIndex -= 1;
     }
 
     setState(() {
-      // Agora removemos e inserimos diretamente, pois o Banner (índice 0)
-      // faz parte da lista manipulável.
+      
+      
       final Movie item = _movies.removeAt(oldIndex);
       _movies.insert(newIndex, item);
     });
@@ -129,9 +129,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
     }).toList();
   }
 
-  // <<< NOVO: Lógica da Roleta >>>
+  
   void _pickRandomMovie() {
-    // 1. Usa a lista FILTRADA (respeita as escolhas do usuário)
+    
     final candidates = _getFilteredMovies();
 
     if (candidates.isEmpty) {
@@ -141,12 +141,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
       return;
     }
 
-    // 2. Sorteia um índice aleatório
+    
     final random = Random();
     final winnerIndex = random.nextInt(candidates.length);
     final winner = candidates[winnerIndex];
 
-    // 3. Mostra o vencedor em um Dialog
+    
     showDialog(
       context: context,
       builder: (context) {
@@ -159,7 +159,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Exibe o pôster do vencedor
+              
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
@@ -192,7 +192,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _pickRandomMovie(); // Gira de novo!
+                _pickRandomMovie(); 
               },
               child: const Text("Girar de novo"),
             ),
@@ -202,7 +202,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               ),
               onPressed: () {
                 Navigator.pop(context);
-                // Abre os detalhes para ver mais ou marcar como assistido
+                
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => MovieDetailsScreen(
@@ -221,7 +221,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
-  // ... (_buildFilters e _showDurationPicker mantidos iguais)
+  
   Widget _buildFilters() {
     if (_movies.isEmpty) return const SizedBox.shrink();
     return SingleChildScrollView(
@@ -320,11 +320,11 @@ class _MovieListScreenState extends State<MovieListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        // <<< NOVO: Botão da Roleta na AppBar >>>
+        
         actions: [
           if (widget.screenType == ScreenType.upcoming && _movies.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.casino), // Ícone de dado
+              icon: const Icon(Icons.casino), 
               tooltip: 'Escolher Aleatoriamente',
               onPressed: _pickRandomMovie,
             ),
@@ -350,7 +350,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
-  // ... (código anterior igual)
+  
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -366,7 +366,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
       );
     }
 
-    // Filtros
+    
     final filteredMovies = _getFilteredMovies();
     bool hasFilters = _selectedGenre != null || _selectedDuration != null;
 
@@ -444,7 +444,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               movie: movie,
               queueId: widget.queueId,
               onTap: () {
-                // <<< NAVEGAÇÃO PARA A NOVA TELA DE INTERAÇÃO >>>
+                
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => WatchedInteractionScreen(
@@ -460,14 +460,14 @@ class _MovieListScreenState extends State<MovieListScreen> {
       );
     }
 
-    // === LAYOUT UNIFICADO CORRIGIDO ===
+    
     return CustomScrollView(
       slivers: [
         SliverReorderableList(
           itemCount: _movies.length,
           onReorder: _onReorder,
 
-          // PROXY DECORATOR: AQUI ESTÁ A CORREÇÃO VISUAL
+          
           proxyDecorator: (Widget child, int index, Animation<double> animation) {
             return AnimatedBuilder(
               animation: animation,
@@ -477,9 +477,9 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 );
                 final double elevation = lerpDouble(0, 6, animValue)!;
 
-                // Se arrastar o BANNER (0) ou o PRIMEIRO DA LISTA (1)
-                // Nós forçamos a renderização de um 'UpcomingMovieCard' LIMPO.
-                // Isso remove o título "Próximos na Fila" do item 1 enquanto ele voa.
+                
+                
+                
                 if (index == 0 || index == 1) {
                   return Material(
                     elevation: elevation,
@@ -505,7 +505,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
           itemBuilder: (context, index) {
             final movie = _movies[index];
 
-            // CASO 1: BANNER
+            
             if (index == 0) {
               return ReorderableDelayedDragStartListener(
                 key: ValueKey(movie.id),
@@ -523,7 +523,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
               );
             }
 
-            // CASO 2: LISTA COMUM
+            
             return Column(
               key: ValueKey(movie.id),
               children: [
@@ -534,7 +534,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                       24.0,
                       16.0,
                       8.0,
-                    ), // Aumentei o topo para 24.0
+                    ), 
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -560,7 +560,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     );
   }
 
-  // Helper para limpar o código repetido de navegação
+  
   void _navigateToDetails(Movie movie) {
     Navigator.of(context).push(
       MaterialPageRoute(
