@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
 import 'package:movie_queue/features/social/view_models/social_view_model.dart';
+import 'package:movie_queue/features/social/widgets/PersonalityInsightsCard.dart';
+import 'package:movie_queue/features/social/widgets/goal_card.dart';
 import 'package:movie_queue/features/social/widgets/hall_of_fame_card.dart';
 import 'package:movie_queue/features/social/widgets/member_card.dart';
 import 'package:movie_queue/features/social/widgets/pending_invite_card.dart';
@@ -39,8 +42,8 @@ class SocialScreen extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: [
+                    // Stream de Convites
                     StreamBuilder<QuerySnapshot>(
-                      // Cria uma instância temporária do serviço para buscar os convites
                       stream: FirestoreService().getPendingInvitesForUser(),
                       builder: (context, inviteSnapshot) {
                         if (!inviteSnapshot.hasData ||
@@ -58,10 +61,11 @@ class SocialScreen extends StatelessWidget {
                       },
                     ),
 
+                    // Conteúdo Principal
                     Expanded(
                       child: (viewModel.memberIds.length <= 1)
                           ? _buildLonelyState(context)
-                          : _buildSocialContent(viewModel), // Conteúdo social
+                          : _buildSocialContent(context, viewModel),
                     ),
                   ],
                 ),
@@ -78,7 +82,7 @@ class SocialScreen extends StatelessWidget {
   }
 
   // Helper para o conteúdo social principal
-  Widget _buildSocialContent(SocialViewModel viewModel) {
+  Widget _buildSocialContent(BuildContext context, SocialViewModel viewModel) {
     return ListView(
       children: [
         if (viewModel.topRatedResult != null)
@@ -92,7 +96,31 @@ class SocialScreen extends StatelessWidget {
           totalMinutes: viewModel.totalMinutes,
         ),
 
+        GoalCard(
+          watchedCount: viewModel.watchedMovieCount,
+          goal: viewModel.currentGoal,
+          endDate: viewModel.goalEndDate,
+          onEdit: () => _showEditGoalDialog(
+            context,
+            viewModel.queueId,
+            viewModel.currentGoal,
+            viewModel.goalEndDate,
+          ),
+        ),
+
         ScoreboardCard(stats: viewModel.scoreboardStats),
+
+        if (viewModel.enthusiastId != null && viewModel.criticId != null)
+          PersonalityInsightsCard(
+            enthusiastName:
+                viewModel.membersData[viewModel.enthusiastId]?['displayName'] ??
+                '...',
+            enthusiastAvg: viewModel.enthusiastAvg,
+            criticName:
+                viewModel.membersData[viewModel.criticId]?['displayName'] ??
+                '...',
+            criticAvg: viewModel.criticAvg,
+          ),
 
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -105,12 +133,12 @@ class SocialScreen extends StatelessWidget {
           final name = viewModel.membersData[id]?['displayName'] ?? '...';
           final email = viewModel.membersData[id]?['email'] ?? '...';
           return MemberCard(name: name, email: email);
-        }),
+        }).toList(),
       ],
     );
   }
 
-  // Helper para a tela de "sozinho"
+  // Helper para quando o usuário está sozinho
   Widget _buildLonelyState(BuildContext context) {
     final viewModel = Provider.of<SocialViewModel>(context, listen: false);
     return Center(
@@ -144,6 +172,7 @@ class SocialScreen extends StatelessWidget {
     );
   }
 
+  // Dialog de Convite
   void _showInviteDialog(BuildContext context, String queueId) {
     final emailController = TextEditingController();
     final firestoreService = FirestoreService();
@@ -163,7 +192,6 @@ class SocialScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              // Agora a chamada funciona
               await firestoreService.sendInvite(
                 inviteeEmail: emailController.text,
                 queueId: queueId,
@@ -174,6 +202,96 @@ class SocialScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Dialog de Edição da Meta
+  void _showEditGoalDialog(
+    BuildContext context,
+    String queueId,
+    int currentGoal,
+    DateTime? currentDate,
+  ) {
+    final controller = TextEditingController(text: currentGoal.toString());
+    final firestoreService = FirestoreService();
+
+    DateTime? selectedDate = currentDate;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Definir Nova Meta'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Quantos filmes?',
+                      hintText: 'Ex: 50',
+                      icon: Icon(Icons.movie),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: Text(
+                      selectedDate == null
+                          ? 'Definir Data Limite (Opcional)'
+                          : 'Prazo: ${DateFormat('dd/MM/yyyy').format(selectedDate!)}',
+                    ),
+                    leading: const Icon(Icons.calendar_today),
+                    trailing: selectedDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () =>
+                                setStateDialog(() => selectedDate = null),
+                          )
+                        : null,
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            selectedDate ??
+                            DateTime.now().add(const Duration(days: 30)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setStateDialog(() => selectedDate = picked);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final newGoal = int.tryParse(controller.text);
+                    if (newGoal != null && newGoal > 0) {
+                      firestoreService.updateQueueGoal(
+                        queueId,
+                        newGoal,
+                        selectedDate,
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -34,16 +34,19 @@ class UpcomingMovieCard extends StatelessWidget {
               ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  movie.fullPosterUrl,
-                  width: 60,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => Container(
+                child: Hero(
+                  tag: 'poster-${movie.id}',
+                  child: Image.network(
+                    movie.fullPosterUrl,
                     width: 60,
                     height: 90,
-                    color: Colors.grey[800],
-                    child: const Icon(Icons.movie),
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => Container(
+                      width: 60,
+                      height: 90,
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.movie),
+                    ),
                   ),
                 ),
               ),

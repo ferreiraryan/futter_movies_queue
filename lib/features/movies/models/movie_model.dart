@@ -7,14 +7,16 @@ class Movie {
   final String posterPath;
   final String releaseDate;
   final DateTime? watchedAt;
-  final Map<String, double>? ratings;
+  final Map<String, double>? ratings; // Mapa de Notas
 
-  // <<< NOVOS CAMPOS >>>
-  final int? runtime; // Duração em minutos
-  final List<String> genres; // Lista de nomes dos gêneros
-  final String? backdropPath; // Imagem de fundo
-  final double? tmdbRating; // Nota média do TMDB
-  final String? tagline; // Slogan do filme
+  // <<< 1. NOVO CAMPO: Mapa de Resenhas >>>
+  final Map<String, String>? reviews; // Ex: {'id_ryan': 'Filme muito bom!'}
+
+  final int? runtime;
+  final List<String> genres;
+  final String? backdropPath;
+  final double? tmdbRating;
+  final String? tagline;
   final String? addedBy;
 
   Movie({
@@ -25,9 +27,10 @@ class Movie {
     required this.releaseDate,
     this.watchedAt,
     this.ratings,
-    // <<< NOVOS CAMPOS NO CONSTRUTOR >>>
+    // <<< 2. ADICIONAR NO CONSTRUTOR >>>
+    this.reviews,
     this.runtime,
-    this.genres = const [], // Garante que a lista nunca seja nula
+    this.genres = const [],
     this.backdropPath,
     this.tmdbRating,
     this.tagline,
@@ -41,12 +44,10 @@ class Movie {
     return 'https://via.placeholder.com/500x750.png?text=No+Image';
   }
 
-  // <<< NOVO GETTER PARA A IMAGEM DE FUNDO >>>
   String get fullBackdropUrl {
     if (backdropPath != null && backdropPath!.isNotEmpty) {
       return 'https://image.tmdb.org/t/p/w780$backdropPath';
     }
-    // Se não tiver imagem de fundo, usa o pôster como fallback
     return fullPosterUrl;
   }
 
@@ -54,7 +55,11 @@ class Movie {
     return ratings?[userId];
   }
 
-  // <<< toMap ATUALIZADO >>>
+  // <<< 3. NOVO HELPER: Pegar resenha do usuário >>>
+  String? getReviewForUser(String userId) {
+    return reviews?[userId];
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -64,6 +69,7 @@ class Movie {
       'releaseDate': releaseDate,
       'watchedAt': watchedAt != null ? Timestamp.fromDate(watchedAt!) : null,
       'ratings': ratings,
+      'reviews': reviews, // <<< 4. SALVAR NO MAPA >>>
       'runtime': runtime,
       'genres': genres,
       'backdropPath': backdropPath,
@@ -73,19 +79,25 @@ class Movie {
     };
   }
 
-  // <<< fromMap ATUALIZADO >>>
   factory Movie.fromMap(Map<String, dynamic> map) {
     return Movie(
       id: map['id'] ?? 0,
       title: map['title'] ?? '',
       overview: map['overview'] ?? '',
       posterPath: map['posterPath'] ?? '',
-      releaseDate: map['releaseDate'] ?? '',
+      releaseDate:
+          map['release_date'] ??
+          map['releaseDate'] ??
+          '', // Fallback para nomes diferentes
       watchedAt: (map['watchedAt'] as Timestamp?)?.toDate(),
       ratings: map['ratings'] != null
           ? Map<String, double>.from(map['ratings'])
           : null,
-      // Usamos '??' para garantir que o app não quebre ao ler dados antigos do Firestore
+      // <<< 5. LER DO MAPA >>>
+      reviews: map['reviews'] != null
+          ? Map<String, String>.from(map['reviews'])
+          : null,
+
       runtime: map['runtime'],
       genres: List<String>.from(map['genres'] ?? []),
       backdropPath: map['backdropPath'],
@@ -95,7 +107,6 @@ class Movie {
     );
   }
 
-  // <<< fromJson (da busca) continua igual, pois a busca não traz esses dados >>>
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
       id: json['id'] ?? 0,
@@ -103,6 +114,9 @@ class Movie {
       overview: json['overview'] ?? '',
       posterPath: json['poster_path'] ?? '',
       releaseDate: json['release_date'] ?? '',
+      watchedAt: null,
+      ratings: null,
+      reviews: null, // API não traz resenhas nossas
     );
   }
 
@@ -114,6 +128,7 @@ class Movie {
     String? releaseDate,
     DateTime? watchedAt,
     Map<String, double>? ratings,
+    Map<String, String>? reviews, // <<< 6. COPYWITH >>>
     int? runtime,
     List<String>? genres,
     String? backdropPath,
@@ -129,6 +144,7 @@ class Movie {
       releaseDate: releaseDate ?? this.releaseDate,
       watchedAt: watchedAt ?? this.watchedAt,
       ratings: ratings ?? this.ratings,
+      reviews: reviews ?? this.reviews,
       runtime: runtime ?? this.runtime,
       genres: genres ?? this.genres,
       backdropPath: backdropPath ?? this.backdropPath,

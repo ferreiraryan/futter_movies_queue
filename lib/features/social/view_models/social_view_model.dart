@@ -1,35 +1,36 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:movie_queue/app/services/firestore_service.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
 
-// ChangeNotifier é a classe do Flutter que nos permite "notificar" a UI sobre mudanças.
 class SocialViewModel extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Guarda o ID da fila que este ViewModel está gerenciando.
   late String queueId;
-
-  // Estado da UI
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  // Dados Calculados (os resultados que a UI vai exibir)
   Map<String, dynamic>? topRatedResult;
   Map<String, int> scoreboardStats = {};
   Map<String, Map<String, dynamic>> membersData = {};
   List<String> memberIds = [];
-
-  // <<< NOVAS PROPRIEDADES PARA ESTATÍSTICAS >>>
   int watchedMovieCount = 0;
   int totalMinutes = 0;
+
+  // <<< DADOS DA META >>>
+  int currentGoal = 50;
+  DateTime? goalEndDate; // Nova propriedade para a data
+
+  String? enthusiastId;
+  double enthusiastAvg = 0.0;
+  String? criticId;
+  double criticAvg = 0.0;
 
   StreamSubscription? _queueSubscription;
 
   void listenToQueue(String queueId) {
-    // Guarda o ID da fila assim que o listener é iniciado.
     this.queueId = queueId;
-
     _queueSubscription?.cancel();
 
     _queueSubscription = _firestoreService.getQueueStream(queueId).listen((
@@ -41,14 +42,17 @@ class SocialViewModel extends ChangeNotifier {
         return;
       }
 
-      // --- TODA A LÓGICA DE DADOS E CÁLCULO FICA AQUI ---
       final queueData = queueSnapshot.data() as Map<String, dynamic>;
+
+      // <<< LER META E DATA >>>
+      currentGoal = (queueData['goal'] as num?)?.toInt() ?? 50;
+      final Timestamp? endDateTs = queueData['goalEndDate'];
+      goalEndDate = endDateTs?.toDate();
 
       memberIds = List<String>.from(queueData['members'] ?? []);
       final watchedMoviesRaw = queueData['watched_movies'] ?? [];
       final upcomingMoviesRaw = queueData['upcoming_movies'] ?? [];
 
-      // <<< CÁLCULO DAS ESTATÍSTICAS ADICIONADO AQUI >>>
       watchedMovieCount = watchedMoviesRaw.length;
       totalMinutes = watchedMoviesRaw.fold(0, (sum, movieData) {
         final runtime = (movieData['runtime'] ?? 0) as int;
@@ -58,21 +62,62 @@ class SocialViewModel extends ChangeNotifier {
       membersData = await _getAllMemberData(memberIds);
       topRatedResult = _findTopRatedMovie(watchedMoviesRaw);
 
-      final allMovies = [
+      final List<Movie> allMovies = [
         ...upcomingMoviesRaw.map((data) => Movie.fromMap(data)),
         ...watchedMoviesRaw.map((data) => Movie.fromMap(data)),
       ];
       scoreboardStats = _calculateScoreboard(allMovies, membersData);
+
+      _calculatePersonalities(watchedMoviesRaw);
 
       _isLoading = false;
       notifyListeners();
     });
   }
 
-  // --- MÉTODOS DE CÁLCULO ---
+  // ... (restante dos métodos _calculatePersonalities, _calculateScoreboard, etc. permanecem iguais)
+  void _calculatePersonalities(List<dynamic> watchedMoviesRaw) {
+    final userRatings = <String, List<double>>{};
+    for (var movieData in watchedMoviesRaw) {
+      final movie = Movie.fromMap(movieData);
+      if (movie.ratings != null) {
+        movie.ratings!.forEach((userId, rating) {
+          if (!userRatings.containsKey(userId)) {
+            userRatings[userId] = [];
+          }
+          userRatings[userId]!.add(rating);
+        });
+      }
+    }
+    String? tempEnthusiastId;
+    double maxAvg = -1.0;
+    String? tempCriticId;
+    double minAvg = 11.0;
+    userRatings.forEach((userId, ratings) {
+      if (ratings.isEmpty) return;
+      final avg = ratings.reduce((a, b) => a + b) / ratings.length;
+      if (avg > maxAvg) {
+        maxAvg = avg;
+        tempEnthusiastId = userId;
+      }
+      if (avg < minAvg) {
+        minAvg = avg;
+        tempCriticId = userId;
+      }
+    });
+    if (tempEnthusiastId != null) {
+      enthusiastId = tempEnthusiastId;
+      enthusiastAvg = maxAvg;
+      criticId = tempCriticId;
+      criticAvg = minAvg;
+    } else {
+      enthusiastId = null;
+      criticId = null;
+    }
+  }
 
   Map<String, int> _calculateScoreboard(
-    List<dynamic> allMovies,
+    List<Movie> allMovies,
     Map<String, Map<String, dynamic>> membersData,
   ) {
     final stats = <String, int>{};

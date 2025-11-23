@@ -11,6 +11,57 @@ class FirestoreService {
   String? get currentUserId => _auth.currentUser?.uid;
   String? get currentUserEmail => _auth.currentUser?.email;
 
+  Future<void> updateMovieReview(
+    Movie movieToUpdate,
+    String userId,
+    String newReview,
+    String queueId,
+  ) async {
+    final docRef = _db.collection('queues').doc(queueId);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final List<dynamic> watchedListRaw =
+        (doc.data()! as Map<String, dynamic>)['watched_movies'] ?? [];
+    List<Movie> watchedList = watchedListRaw
+        .map((data) => Movie.fromMap(data))
+        .toList();
+
+    final int movieIndex = watchedList.indexWhere(
+      (m) => m.id == movieToUpdate.id,
+    );
+
+    if (movieIndex != -1) {
+      final Movie oldMovie = watchedList[movieIndex];
+
+      // Atualiza o mapa de reviews
+      final Map<String, String> updatedReviews = Map.from(
+        oldMovie.reviews ?? {},
+      );
+      updatedReviews[userId] = newReview;
+
+      final Movie updatedMovie = oldMovie.copyWith(reviews: updatedReviews);
+      watchedList[movieIndex] = updatedMovie;
+
+      final List<Map<String, dynamic>> finalMovieMaps = watchedList
+          .map((m) => m.toMap())
+          .toList();
+      await docRef.update({'watched_movies': finalMovieMaps});
+    }
+  }
+
+  Future<void> updateQueueGoal(
+    String queueId,
+    int newGoal,
+    DateTime? endDate,
+  ) async {
+    await _db.collection('queues').doc(queueId).update({
+      'goal': newGoal,
+      'goalEndDate': endDate != null ? Timestamp.fromDate(endDate) : null,
+    });
+  }
+
   Stream<DocumentSnapshot> getUserDocStream() {
     final userId = currentUserId;
     if (userId == null) throw Exception("Usuário não autenticado");

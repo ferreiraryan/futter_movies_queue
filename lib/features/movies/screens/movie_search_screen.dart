@@ -1,5 +1,3 @@
-// lib/features/movies/screens/movie_search_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:movie_queue/app/services/tmdb_service.dart';
 import 'package:movie_queue/features/movies/models/movie_model.dart';
@@ -18,11 +16,14 @@ class MovieSearchScreen extends StatefulWidget {
 class _MovieSearchScreenState extends State<MovieSearchScreen> {
   final TmdbService _tmdbService = TmdbService();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _yearController = TextEditingController();
 
   List<Movie> _searchResults = [];
   bool _isLoading = false;
+  String? _selectedYear; // Estado para guardar o ano do filtro
 
-  void _onSearchChanged(String query) async {
+  void _performSearch() async {
+    final query = _searchController.text;
     if (query.isEmpty) {
       setState(() {
         _searchResults = [];
@@ -34,7 +35,8 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
       _isLoading = true;
     });
 
-    final results = await _tmdbService.searchMovies(query);
+    // Passamos o ano selecionado para o serviço
+    final results = await _tmdbService.searchMovies(query, year: _selectedYear);
 
     if (mounted) {
       setState(() {
@@ -42,6 +44,58 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Filtrar Busca'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _yearController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Ano de Lançamento',
+                  hintText: 'Ex: 2023',
+                  prefixIcon: Icon(Icons.calendar_today),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Limpa o filtro
+                _yearController.clear();
+                setState(() {
+                  _selectedYear = null;
+                });
+                Navigator.pop(context);
+                _performSearch(); // Refaz a busca sem filtro
+              },
+              child: const Text('Limpar Filtros'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _selectedYear = _yearController.text.isNotEmpty
+                      ? _yearController.text
+                      : null;
+                });
+                Navigator.pop(context);
+                _performSearch(); // Refaz a busca com o novo filtro
+              },
+              child: const Text('Aplicar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -55,10 +109,40 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
             hintText: 'Buscar filme...',
             border: InputBorder.none,
           ),
-          onChanged: _onSearchChanged,
+          onChanged: (val) => _performSearch(),
         ),
+        actions: [
+          // Ícone de filtro que muda de cor se houver um filtro ativo
+          IconButton(
+            icon: Icon(
+              Icons.filter_list,
+              color: _selectedYear != null ? Colors.deepPurpleAccent : null,
+            ),
+            onPressed: _showFilterDialog,
+          ),
+        ],
       ),
-      body: _buildSearchResults(),
+      body: Column(
+        children: [
+          // Mostra um "chip" visual se o filtro estiver ativo
+          if (_selectedYear != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Chip(
+                label: Text('Ano: $_selectedYear'),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                onDeleted: () {
+                  setState(() {
+                    _selectedYear = null;
+                    _yearController.clear();
+                  });
+                  _performSearch();
+                },
+              ),
+            ),
+          Expanded(child: _buildSearchResults()),
+        ],
+      ),
     );
   }
 
@@ -73,10 +157,7 @@ class _MovieSearchScreenState extends State<MovieSearchScreen> {
 
     return ListView.builder(
       itemCount: _searchResults.length,
-      padding: const EdgeInsets.only(
-        top: 10,
-        bottom: 10,
-      ), // Adiciona um respiro na lista
+      padding: const EdgeInsets.only(top: 10, bottom: 10),
       itemBuilder: (context, index) {
         final movie = _searchResults[index];
         return SearchedMovieCard(

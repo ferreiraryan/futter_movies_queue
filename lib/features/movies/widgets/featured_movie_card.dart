@@ -26,16 +26,19 @@ class FeaturedMovieCard extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           children: [
             // Imagem de fundo
-            Image.network(
-              // <<< MUDANÇA AQUI >>>
-              movie.fullBackdropUrl, // ANTES: movie.fullPosterUrl
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
+            Hero(
+              tag: 'backdrop-${movie.id}',
+              child: Image.network(
+                // <<< MUDANÇA AQUI >>>
+                movie.fullBackdropUrl, // ANTES: movie.fullPosterUrl
                 height: 250,
-                color: Colors.grey[800],
-                child: const Center(child: Icon(Icons.movie, size: 60)),
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => Container(
+                  height: 250,
+                  color: Colors.grey[800],
+                  child: const Center(child: Icon(Icons.movie, size: 60)),
+                ),
               ),
             ),
             Container(

@@ -153,87 +153,176 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     );
   }
 
+  // ... imports e classe ...
+
   @override
   Widget build(BuildContext context) {
+    final currentUserId = AuthService().currentUserId;
+
     return Scaffold(
+      // AppBar transparente para ficar em cima da imagem
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.movie.title),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // Um ícone de voltar com sombra para garantir leitura
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
       ),
-      extendBodyBehindAppBar: true, // Faz o corpo da tela ir por trás da AppBar
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pôster do filme
-            Image.network(
-              widget.movie.fullBackdropUrl,
-              width: double.infinity,
-              height: 250,
-              fit: BoxFit.cover,
-              errorBuilder: (c, e, s) => Container(
-                height: 250,
-                color: Colors.grey[800],
-                child: const Center(child: Icon(Icons.movie, size: 100)),
+            // === CABEÇALHO COM HERO ===
+            SizedBox(
+              height: 300, // Altura da área do banner
+              child: Stack(
+                children: [
+                  // 1. IMAGEM DE FUNDO (BACKDROP)
+                  Positioned.fill(
+                    child: Hero(
+                      // Tag única para o backdrop
+                      tag: 'backdrop-${widget.movie.id}',
+                      child: Image.network(
+                        widget.movie.fullBackdropUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) =>
+                            Container(color: Colors.grey[900]),
+                      ),
+                    ),
+                  ),
+
+                  // Gradiente escuro na parte inferior para o texto aparecer
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 2. PÔSTER FLUTUANTE + TÍTULO
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // O Pôster que "voa" da lista
+                        Hero(
+                          // Tag única para o pôster
+                          tag: 'poster-${widget.movie.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              widget.movie.fullPosterUrl,
+                              width: 100,
+                              height: 150,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Título e Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.movie.title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(blurRadius: 10, color: Colors.black),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (widget.movie.genres.isNotEmpty)
+                                Text(
+                                  widget.movie.genres.take(2).join(', '),
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Lançamento: ${widget.movie.releaseDate.split('-')[0]}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ), // Seção de detalhes
+            ),
+
+            // === CORPO DO DETALHE ===
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.movie.title,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lançamento: ${widget.movie.releaseDate}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey,
-                    ),
-                  ),
-
+                  // Barra de Avaliação (mantida igual)
                   if (widget.context == MovieDetailsContext.watched &&
                       currentUserId != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      padding: const EdgeInsets.only(bottom: 24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Sua Avaliação',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           RatingBar.builder(
                             initialRating:
-                                widget.movie.getRatingForUser(currentUserId!) ??
+                                widget.movie.getRatingForUser(currentUserId) ??
                                 0,
-                            minRating: 0.5, // Permite dar meia estrela
+                            minRating: 0.5,
                             direction: Axis.horizontal,
                             allowHalfRating: true,
                             itemCount: 5,
+                            itemSize: 30,
                             itemPadding: const EdgeInsets.symmetric(
                               horizontal: 4.0,
                             ),
                             itemBuilder: (context, _) =>
                                 const Icon(Icons.star, color: Colors.amber),
-                            // 2. Ação de Atualização: Chamado sempre que o usuário toca em uma estrela
                             onRatingUpdate: (rating) {
-                              // Chama a função do FirestoreService para salvar a nova nota
                               _firestoreService.updateMovieRating(
                                 widget.movie,
-                                currentUserId!,
+                                currentUserId,
                                 rating,
                                 widget.queueId,
                               );
@@ -243,7 +332,21 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       ),
                     ),
 
-                  const SizedBox(height: 24),
+                  // Tagline (se existir)
+                  if (widget.movie.tagline != null &&
+                      widget.movie.tagline!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Text(
+                        '"${widget.movie.tagline}"',
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+
                   const Text(
                     'Sinopse',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -253,7 +356,11 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     widget.movie.overview.isNotEmpty
                         ? widget.movie.overview
                         : 'Sinopse não disponível.',
-                    style: const TextStyle(fontSize: 16, height: 1.5),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      height: 1.5,
+                      color: Colors.white70,
+                    ),
                   ),
                 ],
               ),
@@ -261,7 +368,6 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           ],
         ),
       ),
-      // A barra inferior que contém o botão de ação
       bottomNavigationBar: _buildActionButton(),
     );
   }
