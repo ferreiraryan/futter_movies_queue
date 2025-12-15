@@ -53,15 +53,30 @@ cd futter_movies_queue
 flutter pub get
 ```
 
-### Configuração do Firebase
+### Configuração do Firebase e TMDB
 
-Para que o projeto funcione, você precisa configurar seu próprio projeto no Firebase:
+Para executar este projeto em sua máquina, você precisará configurar o ambiente Firebase e a API do TMDB:
 
-1.  Crie um projeto no [console do Firebase](https://console.firebase.google.com/).
-2.  Adicione um aplicativo Android e/ou iOS.
-3.  Siga as instruções para baixar o arquivo de configuração (`google-services.json` para Android ou `GoogleService-Info.plist` para iOS) e coloque-o na pasta correta do seu projeto Flutter.
-4.  Ative o **Cloud Firestore** e o **Authentication** (com o provedor "Anônimo") no console.
+Firebase:
 
+    Crie um projeto no Console do Firebase.
+
+    Adicione um app Android/iOS e baixe os arquivos de configuração (google-services.json ou GoogleService-Info.plist).
+
+    Coloque-os nas pastas respectivas (android/app/ e ios/Runner/).
+
+    No console, ative o Authentication (Provedor de Email/Senha).
+
+    Ative o Cloud Firestore e configure as regras de segurança.
+
+TMDB API:
+
+    Crie uma conta no The Movie Database.
+
+    Solicite uma chave de API (API Key).
+
+    No arquivo lib/app/services/tmdb_service.dart, substitua a variável _apiKey pela sua chave.
+    
 ```bash
 # Após configurar o Firebase, execute o projeto
 flutter run
